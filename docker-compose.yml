@@ -99,7 +99,6 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: event-cloudflared
     restart: unless-stopped
-    profiles: ["tunnel"]
     command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
     volumes:
       - ./data/cloudflared:/etc/cloudflared
