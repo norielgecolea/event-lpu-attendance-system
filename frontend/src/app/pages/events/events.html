@@ -1,6 +1,16 @@
 <div class="flex min-h-0 flex-1 flex-col gap-4">
   <!-- Toolbar -->
   <div class="flex flex-wrap items-center gap-2">
+    <label class="sr-only" for="events-month">Month</label>
+    <input
+      hlmInput
+      id="events-month"
+      class="bg-card w-[11.5rem] shrink-0"
+      type="month"
+      [ngModel]="month()"
+      (ngModelChange)="onMonthChange($event)"
+      title="Filter by start month"
+    />
     <div class="relative min-w-0 flex-1">
       <ng-icon
         name="lucideSearch"
@@ -11,11 +21,17 @@
         class="bg-card w-full pl-9"
         type="search"
         placeholder="Search events by title, description, or location"
-        [ngModel]="filter()"
-        (ngModelChange)="filter.set($event)"
+        [ngModel]="search()"
+        (ngModelChange)="search.set($event)"
       />
     </div>
-    <button hlmBtn class="gap-1.5" type="button" (click)="openCreate()">
+    <button
+      hlmBtn
+      class="gap-1.5"
+      type="button"
+      [disabled]="!canCreate()"
+      (click)="openCreate()"
+    >
       <ng-icon name="lucidePlus" class="text-base" />
       New Event
     </button>
@@ -107,19 +123,41 @@
                   >
                     <ng-icon name="lucideClipboardList" class="text-base" />
                   </button>
-                  <button
-                    hlmBtn
-                    size="icon"
-                    variant="ghost"
-                    class="hover:bg-background"
-                    aria-label="Edit event"
-                    title="Edit event"
-                    type="button"
-                    [disabled]="busyId() === event.id"
-                    (click)="openEdit(event)"
-                  >
-                    <ng-icon name="lucideSquarePen" class="text-base" />
-                  </button>
+                  @if (canEdit()) {
+                    <button
+                      hlmBtn
+                      size="icon"
+                      variant="ghost"
+                      class="hover:bg-background"
+                      aria-label="Edit event"
+                      title="Edit event"
+                      type="button"
+                      [disabled]="busyId() === event.id"
+                      (click)="openEdit(event)"
+                    >
+                      <ng-icon name="lucideSquarePen" class="text-base" />
+                    </button>
+                  }
+                  @if (canToggleActive()) {
+                    <button
+                      hlmBtn
+                      size="icon"
+                      variant="ghost"
+                      class="hover:bg-background"
+                      [attr.aria-label]="event.active ? 'Deactivate event' : 'Activate event'"
+                      [title]="event.active ? 'Deactivate event' : 'Activate event'"
+                      type="button"
+                      [disabled]="busyId() === event.id"
+                      (click)="toggleActive(event)"
+                    >
+                      <ng-icon
+                        name="lucidePower"
+                        class="text-base"
+                        [class.text-emerald-600]="!event.active"
+                        [class.text-amber-600]="event.active"
+                      />
+                    </button>
+                  }
                   @if (canDelete()) {
                     <button
                       hlmBtn
@@ -141,7 +179,7 @@
           } @empty {
             <tr hlmTr>
               <td hlmTd colspan="6" class="text-muted-foreground py-10 text-center">
-                No events found.
+                No events for this month.
               </td>
             </tr>
           }

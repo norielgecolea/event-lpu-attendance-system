@@ -41,9 +41,11 @@ public class EventController {
 
     @GetMapping
     public ResponseEntity<List<EventResponse>> list(
-            @RequestParam(defaultValue = "false") boolean activeOnly
+            @RequestParam(defaultValue = "false") boolean activeOnly,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month
     ) {
-        return ResponseEntity.ok(eventService.list(activeOnly));
+        return ResponseEntity.ok(eventService.list(activeOnly, year, month));
     }
 
     /** Public: active events starting today (Asia/Manila). */
@@ -83,6 +85,7 @@ public class EventController {
         return ResponseEntity.status(HttpStatus.CREATED).body(eventService.create(request, userId, null));
     }
 
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'OSAS')")
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<EventResponse> updateMultipart(
             @PathVariable Long id,
@@ -92,6 +95,7 @@ public class EventController {
         return ResponseEntity.ok(eventService.update(id, parseEvent(eventJson), photo));
     }
 
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'OSAS')")
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<EventResponse> updateJson(
             @PathVariable Long id,
@@ -100,6 +104,7 @@ public class EventController {
         return ResponseEntity.ok(eventService.update(id, request, null));
     }
 
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'OSAS')")
     @PatchMapping("/{id}/active")
     public ResponseEntity<EventResponse> setActive(
             @PathVariable Long id,

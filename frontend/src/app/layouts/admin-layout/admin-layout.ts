@@ -99,12 +99,23 @@ export class AdminLayout {
 
   protected readonly navSections: NavSection[] = [
     {
-      label: null,
+      label: 'Overview',
+      items: [{ label: 'Dashboard', icon: 'lucideLayoutDashboard', route: '/dashboard' }],
+    },
+    {
+      label: 'Events',
+      items: [{ label: 'Events', icon: 'lucideCalendarDays', route: '/events' }],
+    },
+    {
+      label: 'Records',
       items: [
-        { label: 'Dashboard', icon: 'lucideLayoutDashboard', route: '/dashboard' },
-        { label: 'Events', icon: 'lucideCalendarDays', route: '/events' },
         { label: 'Student Records', icon: 'lucideGraduationCap', route: '/students' },
         { label: 'Employee Records', icon: 'lucideBriefcase', route: '/employees' },
+      ],
+    },
+    {
+      label: 'Administration',
+      items: [
         { label: 'User Management', icon: 'lucideShieldCheck', route: '/users' },
         { label: 'Event Tones', icon: 'lucideMusic2', route: '/settings/event-tones' },
       ],

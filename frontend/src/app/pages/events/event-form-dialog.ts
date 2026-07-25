@@ -20,6 +20,8 @@ import { compressImageForUpload } from '../../core/images/compress-image';
 export interface EventFormContext {
   mode: 'create' | 'edit';
   event?: EventRecord;
+  /** SUPERADMIN / OSAS may set active; EVENT_MAKER creates as active. */
+  canSetActive?: boolean;
 }
 
 @Component({
@@ -41,6 +43,7 @@ export class EventFormDialog {
   private readonly context = injectBrnDialogContext<EventFormContext>();
 
   protected readonly mode = this.context.mode;
+  protected readonly canSetActive = this.context.canSetActive ?? false;
   protected readonly error = signal<string | null>(null);
   protected readonly compressing = signal(false);
   protected readonly previewUrl = signal<string | null>(
@@ -153,7 +156,7 @@ export class EventFormDialog {
       location: this.location.trim() || null,
       startsAt: startsAtIso,
       endsAt: endsAtIso,
-      active: this.active,
+      active: this.canSetActive ? this.active : true,
       photoFile: this.photoFile,
     });
   }

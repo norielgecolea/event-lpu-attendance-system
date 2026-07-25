@@ -15,8 +15,7 @@ public final class UserRoleAccess {
     public static Set<Role> manageableRoles(Role acting) {
         return switch (acting) {
             case SUPERADMIN -> EnumSet.allOf(Role.class);
-            case ADMIN -> EnumSet.of(Role.ADMIN, Role.SCANNER);
-            case OSAS, SCANNER -> Set.of();
+            case OSAS, EVENT_MAKER -> Set.of();
         };
     }
 
@@ -31,5 +30,17 @@ public final class UserRoleAccess {
                     "You cannot manage users with role " + target.name()
             );
         }
+    }
+
+    public static boolean hidesAttendanceIdentifiers(Role role) {
+        return role == Role.EVENT_MAKER;
+    }
+
+    public static boolean canEditEvents(Role role) {
+        return role == Role.SUPERADMIN || role == Role.OSAS;
+    }
+
+    public static boolean canToggleEventActive(Role role) {
+        return role == Role.SUPERADMIN || role == Role.OSAS;
     }
 }

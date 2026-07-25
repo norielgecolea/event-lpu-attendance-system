@@ -47,7 +47,7 @@ export class UserFormDialog {
 
   protected username = this.context.user?.username ?? '';
   protected password = '';
-  protected role = this.context.user?.role ?? this.context.roles[0] ?? 'ADMIN';
+  protected role = this.context.user?.role ?? this.context.roles[0] ?? 'EVENT_MAKER';
   protected location = this.context.user?.location ?? '';
 
   protected cancel(): void {

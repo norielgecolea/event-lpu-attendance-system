@@ -12,11 +12,10 @@ import { Users } from './pages/users/users';
 import { EventTonesSettings } from './pages/settings/event-tones-settings';
 import { adminPortalGuard, allowRoles, guestGuard } from './core/auth/auth.guards';
 
-const PORTAL_ROLES = ['SUPERADMIN', 'ADMIN', 'OSAS', 'SCANNER'] as const;
-const EVENT_ROLES = ['SUPERADMIN', 'ADMIN', 'OSAS'] as const;
-const ADMIN_ROLES = ['SUPERADMIN', 'ADMIN'] as const;
-const USER_MGMT_ROLES = ['SUPERADMIN', 'ADMIN'] as const;
-const TONE_ROLES = ['SUPERADMIN', 'ADMIN', 'OSAS'] as const;
+const PORTAL_ROLES = ['SUPERADMIN', 'OSAS', 'EVENT_MAKER'] as const;
+const EVENT_ROLES = ['SUPERADMIN', 'OSAS', 'EVENT_MAKER'] as const;
+const STUDENT_ROLES = ['SUPERADMIN', 'OSAS'] as const;
+const SUPERADMIN_ONLY = ['SUPERADMIN'] as const;
 
 export const routes: Routes = [
   { path: '', component: Login, canActivate: [guestGuard], pathMatch: 'full' },
@@ -46,22 +45,22 @@ export const routes: Routes = [
       {
         path: 'students',
         component: Students,
-        canActivate: [allowRoles(...ADMIN_ROLES)],
+        canActivate: [allowRoles(...STUDENT_ROLES)],
       },
       {
         path: 'employees',
         component: Employees,
-        canActivate: [allowRoles(...ADMIN_ROLES)],
+        canActivate: [allowRoles(...SUPERADMIN_ONLY)],
       },
       {
         path: 'users',
         component: Users,
-        canActivate: [allowRoles(...USER_MGMT_ROLES)],
+        canActivate: [allowRoles(...SUPERADMIN_ONLY)],
       },
       {
         path: 'settings/event-tones',
         component: EventTonesSettings,
-        canActivate: [allowRoles(...TONE_ROLES)],
+        canActivate: [allowRoles(...SUPERADMIN_ONLY)],
       },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ],

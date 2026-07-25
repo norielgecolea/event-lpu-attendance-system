@@ -3,18 +3,18 @@ import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from './auth.service';
 
 function redirectAuthenticated(auth: AuthService, router: Router) {
-  if (auth.isAdminPortal() || auth.isScanner()) {
+  if (auth.isAdminPortal()) {
     return router.createUrlTree(['/dashboard']);
   }
   return router.createUrlTree(['/']);
 }
 
-/** Superadmin and Admin portal. */
+/** Portal for SUPERADMIN, OSAS, and EVENT_MAKER. */
 export const adminPortalGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
 
-  if (auth.isAuthenticated() && (auth.isAdminPortal() || auth.isScanner())) {
+  if (auth.isAuthenticated() && auth.isAdminPortal()) {
     return true;
   }
   if (auth.isAuthenticated()) {

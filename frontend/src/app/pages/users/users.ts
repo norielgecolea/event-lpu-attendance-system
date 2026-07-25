@@ -114,11 +114,9 @@ export class Users {
     switch (role) {
       case 'SUPERADMIN':
         return 'bg-primary/10 text-primary';
-      case 'ADMIN':
-        return 'bg-emerald-500/10 text-emerald-600';
       case 'OSAS':
         return 'bg-sky-500/10 text-sky-700';
-      case 'SCANNER':
+      case 'EVENT_MAKER':
         return 'bg-amber-500/10 text-amber-600';
       default:
         return 'bg-muted text-muted-foreground';

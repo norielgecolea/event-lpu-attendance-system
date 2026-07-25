@@ -39,6 +39,26 @@ public class EventRepository {
                 .getResultList();
     }
 
+    /** Events whose start time falls in {@code [fromInclusive, toExclusive)}. */
+    @Transactional(readOnly = true)
+    public List<Event> findStartingBetween(
+            Instant fromInclusive,
+            Instant toExclusive,
+            boolean activeOnly
+    ) {
+        String hql = activeOnly
+                ? "FROM Event e WHERE e.active = true "
+                        + "AND e.startsAt >= :fromInclusive AND e.startsAt < :toExclusive "
+                        + "ORDER BY e.startsAt DESC, e.id DESC"
+                : "FROM Event e WHERE e.startsAt >= :fromInclusive AND e.startsAt < :toExclusive "
+                        + "ORDER BY e.startsAt DESC, e.id DESC";
+        return currentSession()
+                .createQuery(hql, Event.class)
+                .setParameter("fromInclusive", fromInclusive)
+                .setParameter("toExclusive", toExclusive)
+                .getResultList();
+    }
+
     @Transactional(readOnly = true)
     public List<Event> findActiveStartingBetween(Instant fromInclusive, Instant toExclusive) {
         return currentSession()

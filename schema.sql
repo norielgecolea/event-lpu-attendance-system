@@ -8,6 +8,8 @@
 -- ---------------------------------------------------------------------------
 -- event_users
 -- Default SUPERADMIN (local only — rotate in production):
+-- username: superadmin / password: SuperAdmin@123
+-- Roles: SUPERADMIN | OSAS | EVENT_MAKER
 --   username: superadmin
 --   password: SuperAdmin@123
 -- ---------------------------------------------------------------------------

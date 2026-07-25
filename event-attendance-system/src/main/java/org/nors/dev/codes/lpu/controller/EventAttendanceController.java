@@ -7,7 +7,9 @@ import org.nors.dev.codes.lpu.dto.EventAttendancePageResponse;
 import org.nors.dev.codes.lpu.dto.EventAttendanceStatsResponse;
 import org.nors.dev.codes.lpu.dto.EventAttendanceTapRequest;
 import org.nors.dev.codes.lpu.dto.EventKioskStatusResponse;
+import org.nors.dev.codes.lpu.model.Role;
 import org.nors.dev.codes.lpu.security.AuthenticatedUser;
+import org.nors.dev.codes.lpu.security.UserRoleAccess;
 import org.nors.dev.codes.lpu.service.EventAttendanceService;
 import org.nors.dev.codes.lpu.service.NotificationService;
 import org.springframework.http.HttpHeaders;
@@ -40,14 +42,19 @@ public class EventAttendanceController {
     public ResponseEntity<EventAttendancePageResponse> page(
             @RequestParam Long eventId,
             @RequestParam(defaultValue = "0") int offset,
-            @RequestParam(defaultValue = "50") int limit
+            @RequestParam(defaultValue = "50") int limit,
+            @AuthenticationPrincipal AuthenticatedUser user
     ) {
-        return ResponseEntity.ok(eventAttendanceService.pageByEvent(eventId, offset, limit));
+        return ResponseEntity.ok(eventAttendanceService.pageByEvent(
+                eventId, offset, limit, hideIdentifiers(user)));
     }
 
     @GetMapping("/list")
-    public ResponseEntity<List<EventAttendanceLogResponse>> list(@RequestParam Long eventId) {
-        return ResponseEntity.ok(eventAttendanceService.listByEvent(eventId));
+    public ResponseEntity<List<EventAttendanceLogResponse>> list(
+            @RequestParam Long eventId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return ResponseEntity.ok(eventAttendanceService.listByEvent(eventId, hideIdentifiers(user)));
     }
 
     @GetMapping("/stats")
@@ -56,8 +63,11 @@ public class EventAttendanceController {
     }
 
     @GetMapping(value = "/export", produces = "text/csv")
-    public ResponseEntity<byte[]> export(@RequestParam Long eventId) {
-        byte[] csv = eventAttendanceService.exportCsv(eventId);
+    public ResponseEntity<byte[]> export(
+            @RequestParam Long eventId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        byte[] csv = eventAttendanceService.exportCsv(eventId, hideIdentifiers(user));
         return ResponseEntity.ok()
                 .header(
                         HttpHeaders.CONTENT_DISPOSITION,
@@ -80,7 +90,9 @@ public class EventAttendanceController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         Long userId = user != null ? user.getId() : null;
-        return ResponseEntity.ok(eventAttendanceService.tap(request.eventId(), request.identifier(), userId));
+        EventAttendanceLogResponse response =
+                eventAttendanceService.tap(request.eventId(), request.identifier(), userId);
+        return ResponseEntity.ok(hideIdentifiers(user) ? response.withoutIdentifiers() : response);
     }
 
     /** Public kiosk tap — no login required; still enforces event start/end window. */
@@ -89,5 +101,10 @@ public class EventAttendanceController {
             @Valid @RequestBody EventAttendanceTapRequest request
     ) {
         return ResponseEntity.ok(eventAttendanceService.tap(request.eventId(), request.identifier(), null));
+    }
+
+    private static boolean hideIdentifiers(AuthenticatedUser user) {
+        Role role = user != null ? user.getRole() : null;
+        return role != null && UserRoleAccess.hidesAttendanceIdentifiers(role);
     }
 }

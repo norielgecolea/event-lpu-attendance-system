@@ -60,21 +60,27 @@ public class EventAttendanceService {
     }
 
     @Transactional(readOnly = true)
-    public EventAttendancePageResponse pageByEvent(Long eventId, int offset, int limit) {
+    public EventAttendancePageResponse pageByEvent(Long eventId, int offset, int limit, boolean hideIdentifiers) {
         requireEvent(eventId);
         int size = Math.min(Math.max(limit, 1), 200);
         int from = Math.max(offset, 0);
         List<EventAttendanceLogResponse> items = attendanceLogRepository.findByEventId(eventId, from, size).stream()
-                .map(EventAttendanceLogResponse::from)
+                .map(logEntry -> {
+                    EventAttendanceLogResponse response = EventAttendanceLogResponse.from(logEntry);
+                    return hideIdentifiers ? response.withoutIdentifiers() : response;
+                })
                 .toList();
         return new EventAttendancePageResponse(items, attendanceLogRepository.countByEventId(eventId));
     }
 
     @Transactional(readOnly = true)
-    public List<EventAttendanceLogResponse> listByEvent(Long eventId) {
+    public List<EventAttendanceLogResponse> listByEvent(Long eventId, boolean hideIdentifiers) {
         requireEvent(eventId);
         return attendanceLogRepository.listByEventId(eventId).stream()
-                .map(EventAttendanceLogResponse::from)
+                .map(logEntry -> {
+                    EventAttendanceLogResponse response = EventAttendanceLogResponse.from(logEntry);
+                    return hideIdentifiers ? response.withoutIdentifiers() : response;
+                })
                 .toList();
     }
 
@@ -153,7 +159,7 @@ public class EventAttendanceService {
     }
 
     @Transactional(readOnly = true)
-    public byte[] exportCsv(Long eventId) {
+    public byte[] exportCsv(Long eventId, boolean hideIdentifiers) {
         Event event = requireEvent(eventId);
         List<EventAttendanceLog> logs = attendanceLogRepository.listByEventId(eventId);
         ZoneId zone = ZoneId.of("Asia/Manila");
@@ -161,20 +167,37 @@ public class EventAttendanceService {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(baos, StandardCharsets.UTF_8))) {
-            writer.println("Event,Name,ID Number,Type,RFID,Time In,Time Out,Last Action,Tap Count");
+            if (hideIdentifiers) {
+                writer.println("Event,Name,Type,Time In,Time Out,Last Action,Tap Count");
+            } else {
+                writer.println("Event,Name,ID Number,Type,RFID,Time In,Time Out,Last Action,Tap Count");
+            }
             for (EventAttendanceLog logEntry : logs) {
-                writer.printf(
-                        "%s,%s,%s,%s,%s,%s,%s,%s,%d%n",
-                        csv(event.getTitle()),
-                        csv(logEntry.getPersonName()),
-                        csv(logEntry.getPersonNo()),
-                        csv(logEntry.getPersonType()),
-                        csv(logEntry.getRfid()),
-                        logEntry.getTimeIn() == null ? "" : formatter.format(logEntry.getTimeIn()),
-                        logEntry.getTimeOut() == null ? "" : formatter.format(logEntry.getTimeOut()),
-                        csv(logEntry.getLastAction()),
-                        logEntry.getTapCount()
-                );
+                if (hideIdentifiers) {
+                    writer.printf(
+                            "%s,%s,%s,%s,%s,%s,%d%n",
+                            csv(event.getTitle()),
+                            csv(logEntry.getPersonName()),
+                            csv(logEntry.getPersonType()),
+                            logEntry.getTimeIn() == null ? "" : formatter.format(logEntry.getTimeIn()),
+                            logEntry.getTimeOut() == null ? "" : formatter.format(logEntry.getTimeOut()),
+                            csv(logEntry.getLastAction()),
+                            logEntry.getTapCount()
+                    );
+                } else {
+                    writer.printf(
+                            "%s,%s,%s,%s,%s,%s,%s,%s,%d%n",
+                            csv(event.getTitle()),
+                            csv(logEntry.getPersonName()),
+                            csv(logEntry.getPersonNo()),
+                            csv(logEntry.getPersonType()),
+                            csv(logEntry.getRfid()),
+                            logEntry.getTimeIn() == null ? "" : formatter.format(logEntry.getTimeIn()),
+                            logEntry.getTimeOut() == null ? "" : formatter.format(logEntry.getTimeOut()),
+                            csv(logEntry.getLastAction()),
+                            logEntry.getTapCount()
+                    );
+                }
             }
         }
         return baos.toByteArray();

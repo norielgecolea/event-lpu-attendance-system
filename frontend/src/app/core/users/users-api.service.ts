@@ -20,13 +20,12 @@ export interface UserPayload {
   location: string | null;
 }
 
-export const USER_ROLES = ['SUPERADMIN', 'ADMIN', 'OSAS', 'SCANNER'] as const;
+export const USER_ROLES = ['SUPERADMIN', 'OSAS', 'EVENT_MAKER'] as const;
 
 export const ROLE_LABELS: Record<string, string> = {
   SUPERADMIN: 'Superadmin',
-  ADMIN: 'Admin',
   OSAS: 'OSAS',
-  SCANNER: 'Scanner',
+  EVENT_MAKER: 'Event Maker',
 };
 
 @Injectable({ providedIn: 'root' })

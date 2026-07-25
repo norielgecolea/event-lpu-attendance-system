@@ -28,11 +28,11 @@ public record EventAttendanceLogResponse(
     private static final ZoneId APP_ZONE = ZoneId.of("Asia/Manila");
 
     public static EventAttendanceLogResponse from(EventAttendanceLog log) {
-        return from(log, null, null, false);
+        return from(log, null, null, false, false);
     }
 
     public static EventAttendanceLogResponse from(EventAttendanceLog log, String personPhoto) {
-        return from(log, personPhoto, null, false);
+        return from(log, personPhoto, null, false, false);
     }
 
     public static EventAttendanceLogResponse from(
@@ -40,7 +40,7 @@ public record EventAttendanceLogResponse(
             String personPhoto,
             LocalDate birthdate
     ) {
-        return from(log, personPhoto, birthdate, false);
+        return from(log, personPhoto, birthdate, false, false);
     }
 
     public static EventAttendanceLogResponse from(
@@ -49,6 +49,16 @@ public record EventAttendanceLogResponse(
             LocalDate birthdate,
             boolean duplicate
     ) {
+        return from(log, personPhoto, birthdate, duplicate, false);
+    }
+
+    public static EventAttendanceLogResponse from(
+            EventAttendanceLog log,
+            String personPhoto,
+            LocalDate birthdate,
+            boolean duplicate,
+            boolean hideIdentifiers
+    ) {
         return new EventAttendanceLogResponse(
                 String.valueOf(log.getId()),
                 String.valueOf(log.getEventId()),
@@ -56,8 +66,8 @@ public record EventAttendanceLogResponse(
                 log.getStudentId() == null ? null : String.valueOf(log.getStudentId()),
                 log.getEmployeeId() == null ? null : String.valueOf(log.getEmployeeId()),
                 log.getPersonName(),
-                log.getPersonNo(),
-                log.getRfid(),
+                hideIdentifiers ? null : log.getPersonNo(),
+                hideIdentifiers ? null : log.getRfid(),
                 personPhoto,
                 log.getTimeIn(),
                 log.getTimeOut(),
@@ -68,6 +78,30 @@ public record EventAttendanceLogResponse(
                 duplicate,
                 log.getCreatedAt(),
                 log.getUpdatedAt()
+        );
+    }
+
+    /** Strips ID number and RFID for roles that must not see them (e.g. EVENT_MAKER). */
+    public EventAttendanceLogResponse withoutIdentifiers() {
+        return new EventAttendanceLogResponse(
+                id,
+                eventId,
+                personType,
+                studentId,
+                employeeId,
+                personName,
+                null,
+                null,
+                personPhoto,
+                timeIn,
+                timeOut,
+                lastAction,
+                tappedByUserId,
+                tapCount,
+                birthday,
+                duplicate,
+                createdAt,
+                updatedAt
         );
     }
 

@@ -24,9 +24,12 @@ export class AuthService {
   readonly token = this.tokenSignal.asReadonly();
   readonly isAuthenticated = computed(() => !!this.tokenSignal() && !!this.userSignal());
   readonly isSuperAdmin = computed(() => this.userSignal()?.role === 'SUPERADMIN');
-  readonly isAdmin = computed(() => this.userSignal()?.role === 'ADMIN');
   readonly isOsas = computed(() => this.userSignal()?.role === 'OSAS');
-  readonly isScanner = computed(() => this.userSignal()?.role === 'SCANNER');
+  readonly isEventMaker = computed(() => this.userSignal()?.role === 'EVENT_MAKER');
+  /** @deprecated removed role — use isEventMaker / isOsas */
+  readonly isAdmin = computed(() => false);
+  /** @deprecated removed role */
+  readonly isScanner = computed(() => false);
   /** @deprecated gate-only role */
   readonly isHr = computed(() => false);
   /** @deprecated gate-only role */
@@ -34,11 +37,11 @@ export class AuthService {
   /** @deprecated gate-only role */
   readonly isMonitoring = computed(() => false);
   readonly isAdminPortal = computed(
-    () => this.isSuperAdmin() || this.isAdmin() || this.isOsas(),
+    () => this.isSuperAdmin() || this.isOsas() || this.isEventMaker(),
   );
 
   homeRoute(): string {
-    if (this.isAdminPortal() || this.isScanner()) {
+    if (this.isAdminPortal()) {
       return '/dashboard';
     }
     return '/';
@@ -92,7 +95,7 @@ export class AuthService {
 
   restoreSession(): void {
     const token = this.tokenSignal();
-    if (token && (this.isAdminPortal() || this.isScanner())) {
+    if (token && this.isAdminPortal()) {
       this.notifications.connect(token);
     }
   }

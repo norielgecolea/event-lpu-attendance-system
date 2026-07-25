@@ -2,8 +2,8 @@ package org.nors.dev.codes.lpu.model;
 
 public enum Role {
     SUPERADMIN,
-    ADMIN,
-    /** Office of Student Affairs & Services — dashboard + event create/view/edit (no delete). */
+    /** Office of Student Affairs & Services — events + student records; can deactivate events. */
     OSAS,
-    SCANNER
+    /** Can create events and view attendance (no ID/RFID); cannot edit or deactivate. */
+    EVENT_MAKER
 }

@@ -52,23 +52,30 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/event-tones").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/api/auth/**").authenticated()
-                        // Students & employees come from the gate DB — read-only here.
+                        // Students from gate DB — read-only; Superadmin + OSAS
                         .requestMatchers(HttpMethod.GET, "/api/students/**")
-                        .hasAnyRole("SUPERADMIN", "ADMIN")
+                        .hasAnyRole("SUPERADMIN", "OSAS")
                         .requestMatchers("/api/students/**").denyAll()
+                        // Employees — Superadmin only
                         .requestMatchers(HttpMethod.GET, "/api/employees/**")
-                        .hasAnyRole("SUPERADMIN", "ADMIN")
+                        .hasRole("SUPERADMIN")
                         .requestMatchers("/api/employees/**").denyAll()
-                        .requestMatchers("/api/users/**").hasAnyRole("SUPERADMIN", "ADMIN")
-                        .requestMatchers("/api/event-tones/**")
-                        .hasAnyRole("SUPERADMIN", "ADMIN", "OSAS")
-                        // Permanent event deletion: superadmin only
+                        .requestMatchers("/api/users/**").hasRole("SUPERADMIN")
+                        .requestMatchers("/api/event-tones/**").hasRole("SUPERADMIN")
+                        // Event mutations by role
                         .requestMatchers(HttpMethod.DELETE, "/api/events/**").hasRole("SUPERADMIN")
-                        .requestMatchers("/api/events/**").hasAnyRole("SUPERADMIN", "ADMIN", "OSAS")
+                        .requestMatchers(HttpMethod.PUT, "/api/events/**")
+                        .hasAnyRole("SUPERADMIN", "OSAS")
+                        .requestMatchers(HttpMethod.PATCH, "/api/events/**")
+                        .hasAnyRole("SUPERADMIN", "OSAS")
+                        .requestMatchers(HttpMethod.POST, "/api/events/**")
+                        .hasAnyRole("SUPERADMIN", "OSAS", "EVENT_MAKER")
+                        .requestMatchers("/api/events/**")
+                        .hasAnyRole("SUPERADMIN", "OSAS", "EVENT_MAKER")
                         .requestMatchers("/api/dashboard/**")
-                        .hasAnyRole("SUPERADMIN", "ADMIN", "OSAS", "SCANNER")
+                        .hasAnyRole("SUPERADMIN", "OSAS", "EVENT_MAKER")
                         .requestMatchers("/api/event-attendance/**")
-                        .hasAnyRole("SUPERADMIN", "ADMIN", "OSAS", "SCANNER")
+                        .hasAnyRole("SUPERADMIN", "OSAS", "EVENT_MAKER")
                         .requestMatchers("/api/**").hasRole("SUPERADMIN")
                         .anyRequest().permitAll()
                 )
@@ -85,7 +92,6 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Origin has no path — trailing /* would reject browser CORS and return 403
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
                 "http://127.0.0.1:*",

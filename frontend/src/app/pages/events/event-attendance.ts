@@ -29,6 +29,8 @@ import {
   type EventAttendanceStats,
   type EventRecord,
 } from '../../core/events/events-api.service';
+import { AuthService } from '../../core/auth/auth.service';
+import { hidesAttendanceIdentifiers } from '../../core/auth/role-access';
 import { NotificationService } from '../../core/notifications/notification.service';
 
 @Component({
@@ -63,6 +65,7 @@ import { NotificationService } from '../../core/notifications/notification.servi
 })
 export class EventAttendance {
   private readonly api = inject(EventsApiService);
+  private readonly auth = inject(AuthService);
   private readonly notifications = inject(NotificationService);
   private readonly route = inject(ActivatedRoute);
 
@@ -79,6 +82,9 @@ export class EventAttendance {
   protected readonly liveFlash = signal(false);
   protected readonly photoUrl = eventPhotoUrl;
   protected readonly liveConnected = this.notifications.connected;
+  protected readonly hideIdentifiers = computed(() =>
+    hidesAttendanceIdentifiers(this.auth.user()?.role),
+  );
   private readonly searchChanges = new Subject<string>();
   private liveFlashTimer?: ReturnType<typeof setTimeout>;
 
@@ -98,17 +104,25 @@ export class EventAttendance {
 
   protected readonly filteredLogs = computed(() => {
     const term = this.search().trim().toLowerCase();
+    const hideIds = this.hideIdentifiers();
     if (!term) {
       return this.logs();
     }
     return this.logs().filter((log) => {
-      const hay = [log.personName, log.personNo, log.rfid, log.personType]
+      const hay = [
+        log.personName,
+        hideIds ? null : log.personNo,
+        hideIds ? null : log.rfid,
+        log.personType,
+      ]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
       return hay.includes(term);
     });
   });
+
+  protected readonly tableColspan = computed(() => (this.hideIdentifiers() ? 5 : 6));
 
   protected readonly studentShare = computed(() => {
     const s = this.stats();
@@ -157,7 +171,7 @@ export class EventAttendance {
         if (!payload || String(payload.eventId) !== String(this.eventId())) {
           return;
         }
-        this.applyLiveTap(payload);
+        this.applyLiveTap(this.sanitizeLog(payload));
       });
   }
 
@@ -222,6 +236,13 @@ export class EventAttendance {
     this.liveFlash.set(true);
     clearTimeout(this.liveFlashTimer);
     this.liveFlashTimer = setTimeout(() => this.liveFlash.set(false), 1200);
+  }
+
+  private sanitizeLog(log: EventAttendanceLog): EventAttendanceLog {
+    if (!this.hideIdentifiers()) {
+      return log;
+    }
+    return { ...log, personNo: null, rfid: null };
   }
 
   private loadEvent(id: string): void {

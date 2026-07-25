@@ -90,8 +90,18 @@ export class EventsApiService {
   private readonly eventsUrl = `${environment.apiBaseUrl}/events`;
   private readonly attendanceUrl = `${environment.apiBaseUrl}/event-attendance`;
 
-  list(): Observable<EventRecord[]> {
-    return this.http.get<EventRecord[]>(this.eventsUrl);
+  list(options: { year?: number; month?: number; activeOnly?: boolean } = {}): Observable<EventRecord[]> {
+    let params = new HttpParams();
+    if (options.year != null) {
+      params = params.set('year', options.year);
+    }
+    if (options.month != null) {
+      params = params.set('month', options.month);
+    }
+    if (options.activeOnly) {
+      params = params.set('activeOnly', 'true');
+    }
+    return this.http.get<EventRecord[]>(this.eventsUrl, { params });
   }
 
   /** Public endpoint — active events starting today (Asia/Manila). */

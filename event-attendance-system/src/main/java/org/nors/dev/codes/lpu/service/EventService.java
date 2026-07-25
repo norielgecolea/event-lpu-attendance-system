@@ -2,6 +2,7 @@ package org.nors.dev.codes.lpu.service;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -40,10 +41,18 @@ public class EventService {
         this.notificationService = notificationService;
     }
 
+    /**
+     * Lists events that start within the given calendar month (Asia/Manila).
+     * Defaults to the current month when year/month are omitted.
+     */
     @Transactional(readOnly = true)
-    public List<EventResponse> list(boolean activeOnly) {
-        List<Event> events = activeOnly ? eventRepository.findAllActive() : eventRepository.findAll();
-        return events.stream().map(EventResponse::from).toList();
+    public List<EventResponse> list(boolean activeOnly, Integer year, Integer month) {
+        YearMonth yearMonth = resolveYearMonth(year, month);
+        Instant fromInclusive = yearMonth.atDay(1).atStartOfDay(APP_ZONE).toInstant();
+        Instant toExclusive = yearMonth.plusMonths(1).atDay(1).atStartOfDay(APP_ZONE).toInstant();
+        return eventRepository.findStartingBetween(fromInclusive, toExclusive, activeOnly).stream()
+                .map(EventResponse::from)
+                .toList();
     }
 
     /** Active events whose start time falls on today's calendar date (Asia/Manila). */
@@ -142,6 +151,29 @@ public class EventService {
     private Event requireEvent(Long id) {
         return eventRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Event not found"));
+    }
+
+    private static YearMonth resolveYearMonth(Integer year, Integer month) {
+        if (year == null && month == null) {
+            return YearMonth.now(APP_ZONE);
+        }
+        if (year == null || month == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Both year and month are required when filtering by month"
+            );
+        }
+        if (month < 1 || month > 12) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Month must be between 1 and 12");
+        }
+        if (year < 1970 || year > 2100) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Year is out of range");
+        }
+        try {
+            return YearMonth.of(year, month);
+        } catch (Exception ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid year/month");
+        }
     }
 
     private static void applyRequest(Event event, EventRequest request) {

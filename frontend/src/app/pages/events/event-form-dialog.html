@@ -146,17 +146,19 @@
       </div>
     </div>
 
-    <div hlmField>
-      <label class="flex cursor-pointer items-center gap-2 text-sm font-medium">
-        <input
-          type="checkbox"
-          class="accent-primary size-4"
-          name="active"
-          [(ngModel)]="active"
-        />
-        Active event
-      </label>
-    </div>
+    @if (canSetActive) {
+      <div hlmField>
+        <label class="flex cursor-pointer items-center gap-2 text-sm font-medium">
+          <input
+            type="checkbox"
+            class="accent-primary size-4"
+            name="active"
+            [(ngModel)]="active"
+          />
+          Active event
+        </label>
+      </div>
+    }
 
     <div hlmDialogFooter class="gap-2">
       <button hlmBtn type="button" variant="outline" (click)="cancel()">Cancel</button>

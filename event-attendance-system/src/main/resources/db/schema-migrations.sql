@@ -91,3 +91,7 @@ CREATE TABLE IF NOT EXISTS event_tones (
 
 CREATE INDEX IF NOT EXISTS idx_event_tones_uploaded
     ON event_tones (uploaded_at ASC, id ASC);
+
+-- Roles: SUPERADMIN, OSAS, EVENT_MAKER (migrate legacy ADMIN / SCANNER)
+UPDATE event_users SET role = 'OSAS' WHERE role = 'ADMIN';
+UPDATE event_users SET role = 'EVENT_MAKER' WHERE role = 'SCANNER';
