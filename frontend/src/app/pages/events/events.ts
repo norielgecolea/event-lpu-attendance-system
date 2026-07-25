@@ -105,7 +105,8 @@ export class Events {
   private openForm(mode: 'create' | 'edit', event?: EventRecord): void {
     const ref = this.dialog.open(EventFormDialog, {
       context: { mode, event },
-      contentClass: 'max-w-[calc(100%-2rem)] sm:max-w-6xl lg:max-w-7xl p-5 sm:p-7',
+      contentClass:
+        'max-w-[calc(100%-1rem)] w-[calc(100%-1rem)] sm:max-w-[min(96vw,90rem)] sm:w-[min(96vw,90rem)] p-4 sm:p-8 max-h-[min(96vh,70rem)]',
     });
 
     ref.closed$

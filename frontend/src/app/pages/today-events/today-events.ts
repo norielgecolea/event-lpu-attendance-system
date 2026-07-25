@@ -1,6 +1,6 @@
 import { DatePipe, isPlatformBrowser } from '@angular/common';
 import { Component, PLATFORM_ID, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideArrowLeft, lucideCalendarDays, lucideMapPin } from '@ng-icons/lucide';
 import { HlmButton } from '@spartan-ng/helm/button';
@@ -38,6 +38,7 @@ import {
 })
 export class TodayEvents {
   private readonly api = inject(EventsApiService);
+  private readonly router = inject(Router);
   private readonly platformId = inject(PLATFORM_ID);
 
   protected readonly events = signal<EventRecord[]>([]);
@@ -67,5 +68,26 @@ export class TodayEvents {
         this.error.set(err?.error?.message ?? 'Failed to load today’s events');
       },
     });
+  }
+
+  /** Open attendance kiosk and enter fullscreen (requires user gesture). */
+  protected async openEvent(event: EventRecord, clickEvent?: Event): Promise<void> {
+    clickEvent?.preventDefault();
+    if (isPlatformBrowser(this.platformId)) {
+      await this.enterFullscreen();
+    }
+    await this.router.navigate(['/attend', event.id]);
+  }
+
+  private async enterFullscreen(): Promise<void> {
+    const root = document.documentElement;
+    if (!root || document.fullscreenElement) {
+      return;
+    }
+    try {
+      await root.requestFullscreen();
+    } catch {
+      // Browsers may block fullscreen; attendance still opens normally.
+    }
   }
 }

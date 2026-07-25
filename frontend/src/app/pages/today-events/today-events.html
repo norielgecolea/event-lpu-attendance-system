@@ -49,6 +49,7 @@
             class="today-card bg-card hover:border-primary/40 block overflow-hidden rounded-2xl border shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             [style.animation-delay.ms]="i * 70"
             [routerLink]="['/attend', event.id]"
+            (click)="openEvent(event, $event)"
           >
             @if (photoUrl(event.photo); as src) {
               <img [src]="src" [alt]="event.title" class="h-44 w-full object-cover" />
