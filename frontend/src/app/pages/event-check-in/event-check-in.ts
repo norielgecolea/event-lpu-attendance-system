@@ -33,9 +33,10 @@ import {
 } from '../../core/events/events-api.service';
 import { NotificationService } from '../../core/notifications/notification.service';
 import { studentPhotoUrl } from '../../core/students/student-photo.util';
+import { EventKioskSounds } from './event-kiosk-sounds';
 
 type WindowStatus = 'loading' | 'not_started' | 'open' | 'ended' | 'missing';
-type Flash = 'idle' | 'in' | 'out' | 'error';
+type Flash = 'idle' | 'in' | 'out' | 'error' | 'birthday';
 
 @Component({
   selector: 'app-event-check-in',
@@ -62,12 +63,14 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
   private readonly notifications = inject(NotificationService);
   private readonly route = inject(ActivatedRoute);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly sounds = new EventKioskSounds();
 
   protected readonly event = signal<EventRecord | null>(null);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
   protected readonly identifier = signal('');
   protected readonly tapError = signal<string | null>(null);
+  protected readonly errorNotFound = signal(false);
   protected readonly lastTap = signal<EventAttendanceLog | null>(null);
   protected readonly flash = signal<Flash>('idle');
   protected readonly animKey = signal(0);
@@ -183,14 +186,19 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
     this.lastScanId = identifier;
     this.lastScanAt = now;
     this.tapError.set(null);
+    this.errorNotFound.set(false);
     this.inFlight += 1;
 
     this.api.publicTap(event.id, identifier).subscribe({
       next: (log) => {
         this.inFlight = Math.max(0, this.inFlight - 1);
         this.lastTap.set(log);
-        this.flash.set(log.lastAction === 'TIME_OUT' ? 'out' : 'in');
+        this.errorNotFound.set(false);
+        this.flash.set(
+          log.birthday ? 'birthday' : log.lastAction === 'TIME_OUT' ? 'out' : 'in',
+        );
         this.animKey.update((k) => k + 1);
+        this.playTapSound(log);
         this.scheduleClear();
         this.focusInput();
       },
@@ -199,11 +207,28 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
         this.lastTap.set(null);
         this.flash.set('error');
         this.animKey.update((k) => k + 1);
+        const notFound = err?.status === 404;
+        this.errorNotFound.set(notFound);
         this.tapError.set(err?.error?.message ?? 'Tap failed. Please try again.');
+        if (notFound) {
+          this.sounds.playNotFound();
+        } else {
+          this.sounds.playError();
+        }
         this.scheduleClear();
         this.focusInput();
       },
     });
+  }
+
+  private playTapSound(log: EventAttendanceLog): void {
+    if (log.birthday) {
+      this.sounds.playBirthday();
+    } else if (log.lastAction === 'TIME_OUT') {
+      this.sounds.playTimeOut();
+    } else {
+      this.sounds.playTimeIn();
+    }
   }
 
   private scheduleClear(): void {
@@ -214,6 +239,7 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
       }
       this.lastTap.set(null);
       this.tapError.set(null);
+      this.errorNotFound.set(false);
       this.flash.set('idle');
     }, 2800);
   }

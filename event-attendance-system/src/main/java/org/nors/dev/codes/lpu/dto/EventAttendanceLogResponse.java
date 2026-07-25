@@ -1,6 +1,8 @@
 package org.nors.dev.codes.lpu.dto;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import org.nors.dev.codes.lpu.model.EventAttendanceLog;
 
 public record EventAttendanceLogResponse(
@@ -18,14 +20,25 @@ public record EventAttendanceLogResponse(
         String lastAction,
         String tappedByUserId,
         int tapCount,
+        boolean birthday,
         Instant createdAt,
         Instant updatedAt
 ) {
+    private static final ZoneId APP_ZONE = ZoneId.of("Asia/Manila");
+
     public static EventAttendanceLogResponse from(EventAttendanceLog log) {
-        return from(log, null);
+        return from(log, null, null);
     }
 
     public static EventAttendanceLogResponse from(EventAttendanceLog log, String personPhoto) {
+        return from(log, personPhoto, null);
+    }
+
+    public static EventAttendanceLogResponse from(
+            EventAttendanceLog log,
+            String personPhoto,
+            LocalDate birthdate
+    ) {
         return new EventAttendanceLogResponse(
                 String.valueOf(log.getId()),
                 String.valueOf(log.getEventId()),
@@ -41,8 +54,18 @@ public record EventAttendanceLogResponse(
                 log.getLastAction(),
                 log.getTappedByUserId() == null ? null : String.valueOf(log.getTappedByUserId()),
                 log.getTapCount(),
+                isBirthdayToday(birthdate),
                 log.getCreatedAt(),
                 log.getUpdatedAt()
         );
+    }
+
+    private static boolean isBirthdayToday(LocalDate birthdate) {
+        if (birthdate == null) {
+            return false;
+        }
+        LocalDate today = LocalDate.now(APP_ZONE);
+        return birthdate.getMonthValue() == today.getMonthValue()
+                && birthdate.getDayOfMonth() == today.getDayOfMonth();
     }
 }

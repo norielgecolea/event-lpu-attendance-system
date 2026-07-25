@@ -243,7 +243,11 @@ public class EventAttendanceService {
                     tappedByUserId
             );
             log.info("{} eventId={} studentNo={}", result.getLastAction(), eventId, student.getStudentNo());
-            EventAttendanceLogResponse response = EventAttendanceLogResponse.from(result, student.getPhoto());
+            EventAttendanceLogResponse response = EventAttendanceLogResponse.from(
+                    result,
+                    student.getPhoto(),
+                    student.getBirthdate()
+            );
             notificationService.broadcastAttendanceTap(response);
             return response;
         }
@@ -264,7 +268,11 @@ public class EventAttendanceService {
                 tappedByUserId
         );
         log.info("{} eventId={} employeeNo={}", result.getLastAction(), eventId, employee.getEmployeeNo());
-        EventAttendanceLogResponse response = EventAttendanceLogResponse.from(result, employee.getPhoto());
+        EventAttendanceLogResponse response = EventAttendanceLogResponse.from(
+                result,
+                employee.getPhoto(),
+                employee.getBirthdate()
+        );
         notificationService.broadcastAttendanceTap(response);
         return response;
     }

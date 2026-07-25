@@ -3,6 +3,7 @@
   [class.is-in]="flash() === 'in'"
   [class.is-out]="flash() === 'out'"
   [class.is-error]="flash() === 'error'"
+  [class.is-birthday]="flash() === 'birthday'"
 >
   <div class="kiosk-glow" aria-hidden="true"></div>
 
@@ -103,8 +104,12 @@
         } @else if (tapError(); as errMsg) {
           @for (_ of [animKey()]; track _) {
             <div class="kiosk-result error-panel" role="alert">
-              <ng-icon name="lucideCircleAlert" class="kiosk-error-icon" />
-              <p class="kiosk-result-action">Tap failed</p>
+              <div class="kiosk-error-orb" aria-hidden="true">
+                <ng-icon name="lucideCircleAlert" class="kiosk-error-icon" />
+              </div>
+              <p class="kiosk-result-action">
+                {{ errorNotFound() ? 'No record found' : 'Tap failed' }}
+              </p>
               <h3 class="kiosk-result-name">{{ errMsg }}</h3>
               <p class="kiosk-result-sub">Please scan again</p>
             </div>
@@ -115,15 +120,19 @@
               class="kiosk-result"
               [class.result-in]="tap.lastAction === 'TIME_IN'"
               [class.result-out]="tap.lastAction === 'TIME_OUT'"
+              [class.result-bday]="!!tap.birthday"
             >
-              <div class="kiosk-person-photo">
-                @if (personPhoto(tap.personPhoto); as src) {
-                  <img [src]="src" [alt]="tap.personName ?? 'Attendee'" />
-                } @else {
-                  <div class="kiosk-person-fallback">
-                    <ng-icon name="lucideUserRound" />
-                  </div>
-                }
+              <div class="kiosk-person-hero">
+                <div class="kiosk-person-ring" aria-hidden="true"></div>
+                <div class="kiosk-person-photo">
+                  @if (personPhoto(tap.personPhoto); as src) {
+                    <img [src]="src" [alt]="tap.personName ?? 'Attendee'" />
+                  } @else {
+                    <div class="kiosk-person-fallback">
+                      <ng-icon name="lucideUserRound" />
+                    </div>
+                  }
+                </div>
                 <span
                   class="kiosk-action-badge"
                   [class.in]="tap.lastAction === 'TIME_IN'"
@@ -134,6 +143,9 @@
               </div>
 
               <div class="kiosk-person-copy">
+                @if (tap.birthday) {
+                  <p class="kiosk-birthday">Happy Birthday!</p>
+                }
                 <span class="kiosk-type">
                   {{ tap.personType === 'EMPLOYEE' ? 'Employee' : 'Student' }}
                 </span>

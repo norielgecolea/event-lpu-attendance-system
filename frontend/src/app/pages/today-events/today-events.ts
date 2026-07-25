@@ -74,6 +74,7 @@ export class TodayEvents {
   protected async openEvent(event: EventRecord, clickEvent?: Event): Promise<void> {
     clickEvent?.preventDefault();
     if (isPlatformBrowser(this.platformId)) {
+      this.warmAudio();
       await this.enterFullscreen();
     }
     await this.router.navigate(['/attend', event.id]);
@@ -88,6 +89,22 @@ export class TodayEvents {
       await root.requestFullscreen();
     } catch {
       // Browsers may block fullscreen; attendance still opens normally.
+    }
+  }
+
+  /** Unlock Web Audio during the same user gesture used for fullscreen. */
+  private warmAudio(): void {
+    try {
+      const Ctor =
+        window.AudioContext ??
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!Ctor) {
+        return;
+      }
+      const ctx = new Ctor();
+      void ctx.resume().finally(() => void ctx.close());
+    } catch {
+      // ignore
     }
   }
 }

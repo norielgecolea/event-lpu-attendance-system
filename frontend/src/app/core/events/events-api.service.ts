@@ -42,6 +42,7 @@ export interface EventAttendanceLog {
   lastAction: 'TIME_IN' | 'TIME_OUT' | string;
   tappedByUserId?: string | null;
   tapCount?: number;
+  birthday?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
