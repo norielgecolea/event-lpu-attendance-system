@@ -1,7 +1,6 @@
 .env
 data/postgres-data/
 data/tomcat/logs/
-data/tomcat/webapps/*.war
 data/pictures/*
 !data/pictures/.gitkeep
 data/videos/*
@@ -15,7 +14,9 @@ frontend/dist/
 frontend/.angular/
 *.class
 *.jar
+# Ignore build WARs, but keep the deployed Tomcat WAR for git deploys
 *.war
+!data/tomcat/webapps/*.war
 target/
 .DS_Store
 .idea/

@@ -30,14 +30,22 @@ Optional gate overrides: `GATE_ATTENDANCE_DB_PORT`, `GATE_ATTENDANCE_DB_NAME`, `
 
 ```bash
 cp .env.example .env
-# set GATE_ATTENDANCE_DB_HOST to the gate DB IP
-
-mvn -f event-attendance-system clean package
-cp event-attendance-system/target/event-attendance-system.war data/tomcat/webapps/
+# set GATE_ATTENDANCE_DB_HOST / GATE_ATTENDANCE_URL / CLOUDFLARE_TUNNEL_TOKEN as needed
 
 docker compose up -d --build
 # → http://localhost  /  https://localhost
+# Backend: WAR is baked into the Tomcat image AND may be kept in
+# data/tomcat/webapps/event-attendance-system.war for git deploys.
+# Existing WAR files are never deleted on container start.
 # TLS: data/web/certs is gitignored; nginx auto-creates a self-signed cert on first start.
+```
+
+After backend code changes, rebuild the WAR (and optionally refresh the committed copy):
+
+```bash
+mvn -f event-attendance-system clean package -DskipTests
+cp -f event-attendance-system/target/event-attendance-system.war data/tomcat/webapps/
+docker compose up -d --build tomcat
 ```
 
 Login: `superadmin` / `SuperAdmin@123`

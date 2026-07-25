@@ -1,0 +1,16 @@
+# Keep image builds small/fast
+.git
+.env
+.env.*
+data/postgres-data
+data/tomcat/logs
+data/tomcat/webapps
+data/pictures
+data/videos
+data/cloudflared
+data/web/certs
+frontend/node_modules
+frontend/dist
+frontend/.angular
+**/target
+*.md

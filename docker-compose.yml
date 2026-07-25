@@ -21,7 +21,8 @@ services:
 
   tomcat:
     build:
-      context: ./docker/tomcat
+      context: .
+      dockerfile: docker/tomcat/Dockerfile
     image: lpu-event-attendance-tomcat:11-jdk21-ffmpeg
     container_name: event-tomcat_server
     ports:
@@ -43,7 +44,7 @@ services:
       APP_VIDEOS_DIR: /usr/local/tomcat/videos
       JAVA_OPTS: "-Dlpu.log.dir=/usr/local/tomcat/logs"
     volumes:
-      # Deploy: mvn -f event-attendance-system clean package && cp event-attendance-system/target/event-attendance-system.war data/tomcat/webapps/
+      # WAR is baked into the image and copied here on start (no manual mvn/cp needed)
       - ./data/tomcat/webapps:/usr/local/tomcat/webapps
       - ./data/tomcat/logs:/usr/local/tomcat/logs
       - ./data/pictures:/usr/local/tomcat/pictures
