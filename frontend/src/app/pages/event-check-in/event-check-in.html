@@ -1,0 +1,178 @@
+<div
+  class="kiosk"
+  [class.is-in]="flash() === 'in'"
+  [class.is-out]="flash() === 'out'"
+  [class.is-error]="flash() === 'error'"
+>
+  <div class="kiosk-glow" aria-hidden="true"></div>
+
+  <header class="kiosk-top">
+    <a hlmBtn variant="outline" size="sm" class="kiosk-back" routerLink="/today">
+      <ng-icon name="lucideArrowLeft" />
+      Events
+    </a>
+
+    <div class="kiosk-brand">
+      <img class="kiosk-logo" src="/logo.svg" alt="LPU Laguna" />
+      <div>
+        <p class="kiosk-brand-label">LPU Laguna</p>
+        <h1 class="kiosk-brand-title">Event Attendance</h1>
+      </div>
+    </div>
+
+    <div class="kiosk-clock">
+      <p class="kiosk-time">{{ clock() | date: 'h:mm:ss a' }}</p>
+      <p class="kiosk-date">{{ clock() | date: 'EEE, MMM d' }}</p>
+    </div>
+  </header>
+
+  <form class="kiosk-capture" (ngSubmit)="onSubmit()" aria-hidden="true">
+    <input
+      #idInput
+      id="event-tap-id"
+      name="identifier"
+      type="text"
+      autocomplete="off"
+      autocapitalize="off"
+      spellcheck="false"
+      [disabled]="!canTap()"
+      [ngModel]="identifier()"
+      (ngModelChange)="identifier.set($event)"
+    />
+  </form>
+
+  @if (error()) {
+    <div class="kiosk-banner error" role="alert">{{ error() }}</div>
+  }
+
+  @if (loading()) {
+    <div class="kiosk-loading">Loading event…</div>
+  } @else if (event(); as event) {
+    <div class="kiosk-layout">
+      <aside class="kiosk-event">
+        <div class="kiosk-event-photo">
+          @if (eventPhoto(event.photo); as src) {
+            <img [src]="src" [alt]="event.title" />
+          } @else {
+            <div class="kiosk-event-fallback">
+              <ng-icon name="lucideCalendarDays" />
+            </div>
+          }
+          <div class="kiosk-event-shade"></div>
+          <div class="kiosk-event-meta">
+            @if (windowStatus() === 'open') {
+              <span class="kiosk-pill open">Open</span>
+            } @else if (windowStatus() === 'not_started') {
+              <span class="kiosk-pill wait">Not started</span>
+            } @else if (windowStatus() === 'ended') {
+              <span class="kiosk-pill ended">Ended</span>
+            }
+            <h2>{{ event.title }}</h2>
+            @if (event.location) {
+              <p>
+                <ng-icon name="lucideMapPin" />
+                {{ event.location }}
+              </p>
+            }
+            <p>
+              <ng-icon name="lucideClock" />
+              {{ event.startsAt | date: 'h:mm a' }}
+              @if (event.endsAt) {
+                – {{ event.endsAt | date: 'h:mm a' }}
+              }
+            </p>
+          </div>
+        </div>
+      </aside>
+
+      <main class="kiosk-stage">
+        @if (windowStatus() === 'not_started') {
+          <div class="kiosk-idle wait-state">
+            <ng-icon name="lucideClock" class="kiosk-idle-icon" />
+            <p class="kiosk-idle-title">Attendance opens soon</p>
+            <p class="kiosk-idle-hint">
+              Starts at {{ event.startsAt | date: 'h:mm a' }}. Scanning is locked until then.
+            </p>
+          </div>
+        } @else if (windowStatus() === 'ended') {
+          <div class="kiosk-idle wait-state">
+            <ng-icon name="lucideCircleAlert" class="kiosk-idle-icon" />
+            <p class="kiosk-idle-title">Event ended</p>
+            <p class="kiosk-idle-hint">Attendance is closed for this event.</p>
+          </div>
+        } @else if (tapError(); as errMsg) {
+          @for (_ of [animKey()]; track _) {
+            <div class="kiosk-result error-panel" role="alert">
+              <ng-icon name="lucideCircleAlert" class="kiosk-error-icon" />
+              <p class="kiosk-result-action">Tap failed</p>
+              <h3 class="kiosk-result-name">{{ errMsg }}</h3>
+              <p class="kiosk-result-sub">Please scan again</p>
+            </div>
+          }
+        } @else if (lastTap(); as tap) {
+          @for (_ of [animKey()]; track _) {
+            <div
+              class="kiosk-result"
+              [class.result-in]="tap.lastAction === 'TIME_IN'"
+              [class.result-out]="tap.lastAction === 'TIME_OUT'"
+            >
+              <div class="kiosk-person-photo">
+                @if (personPhoto(tap.personPhoto); as src) {
+                  <img [src]="src" [alt]="tap.personName ?? 'Attendee'" />
+                } @else {
+                  <div class="kiosk-person-fallback">
+                    <ng-icon name="lucideUserRound" />
+                  </div>
+                }
+                <span
+                  class="kiosk-action-badge"
+                  [class.in]="tap.lastAction === 'TIME_IN'"
+                  [class.out]="tap.lastAction === 'TIME_OUT'"
+                >
+                  {{ tap.lastAction === 'TIME_OUT' ? 'Time Out' : 'Time In' }}
+                </span>
+              </div>
+
+              <div class="kiosk-person-copy">
+                <span class="kiosk-type">
+                  {{ tap.personType === 'EMPLOYEE' ? 'Employee' : 'Student' }}
+                </span>
+                <h3 class="kiosk-result-name">{{ tap.personName }}</h3>
+                <p class="kiosk-result-sub">{{ tap.personNo }}</p>
+                <div class="kiosk-times">
+                  <div class="kiosk-time-chip" [class.active]="tap.lastAction === 'TIME_IN'">
+                    <span>In</span>
+                    <strong>
+                      @if (tap.timeIn) {
+                        {{ tap.timeIn | date: 'h:mm:ss a' }}
+                      } @else {
+                        —
+                      }
+                    </strong>
+                  </div>
+                  <div class="kiosk-time-chip" [class.active]="tap.lastAction === 'TIME_OUT'">
+                    <span>Out</span>
+                    <strong>
+                      @if (tap.timeOut) {
+                        {{ tap.timeOut | date: 'h:mm:ss a' }}
+                      } @else {
+                        —
+                      }
+                    </strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+        } @else {
+          <div class="kiosk-idle">
+            <div class="kiosk-pulse" aria-hidden="true"></div>
+            <ng-icon name="lucideScanBarcode" class="kiosk-idle-icon" />
+            <p class="kiosk-idle-title">Ready to scan</p>
+            <p class="kiosk-idle-hint">Tap an RFID card or enter an ID number</p>
+          </div>
+        }
+      </main>
+    </div>
+  }
+</div>

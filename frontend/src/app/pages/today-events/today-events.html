@@ -1,0 +1,86 @@
+<div class="relative min-h-dvh bg-[#f6f7fb]">
+  <div
+    class="absolute inset-0 bg-cover bg-center opacity-30"
+    style="background-image: url('/background.webp')"
+    aria-hidden="true"
+  ></div>
+  <div
+    class="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(246,247,251,0.96))]"
+    aria-hidden="true"
+  ></div>
+
+  <div class="relative z-10 mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <a hlmBtn variant="outline" class="gap-1.5" routerLink="/">
+        <ng-icon name="lucideArrowLeft" class="text-base" />
+        Back to login
+      </a>
+      <div class="text-muted-foreground flex items-center gap-2 text-sm">
+        <ng-icon name="lucideCalendarDays" class="text-base" />
+        {{ todayLabel }}
+      </div>
+    </div>
+
+    <header class="space-y-2">
+      <p class="text-primary text-xs font-bold uppercase tracking-[0.2em]">LPU Laguna</p>
+      <h1 class="text-3xl font-black tracking-tight text-gray-950 sm:text-4xl">Today’s Events</h1>
+      <p class="text-muted-foreground max-w-2xl text-sm sm:text-base">
+        Tap an event to open attendance. Check-in only works after the event’s start time.
+      </p>
+    </header>
+
+    @if (error()) {
+      <p class="text-destructive rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm" role="alert">
+        {{ error() }}
+      </p>
+    }
+
+    @if (loading()) {
+      <p class="text-muted-foreground py-16 text-center text-sm">Loading today’s events…</p>
+    } @else if (events().length === 0) {
+      <div class="bg-card rounded-2xl border px-6 py-16 text-center shadow-sm">
+        <p class="text-foreground text-lg font-semibold">No events today</p>
+        <p class="text-muted-foreground mt-1 text-sm">Check back later or ask an admin to create one.</p>
+      </div>
+    } @else {
+      <div class="grid gap-4 sm:grid-cols-2">
+        @for (event of events(); track event.id; let i = $index) {
+          <a
+            class="today-card bg-card hover:border-primary/40 block overflow-hidden rounded-2xl border shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            [style.animation-delay.ms]="i * 70"
+            [routerLink]="['/attend', event.id]"
+          >
+            @if (photoUrl(event.photo); as src) {
+              <img [src]="src" [alt]="event.title" class="h-44 w-full object-cover" />
+            } @else {
+              <div class="from-primary/20 to-primary/5 flex h-44 items-center justify-center bg-gradient-to-br">
+                <ng-icon name="lucideCalendarDays" class="text-primary/50 text-4xl" />
+              </div>
+            }
+            <div class="space-y-2 p-4">
+              <h2 class="text-foreground text-lg font-bold leading-snug">{{ event.title }}</h2>
+              @if (event.description) {
+                <p class="text-muted-foreground line-clamp-2 text-sm">{{ event.description }}</p>
+              }
+              @if (event.location) {
+                <p class="text-muted-foreground flex items-center gap-1.5 text-xs">
+                  <ng-icon name="lucideMapPin" class="text-sm" />
+                  {{ event.location }}
+                </p>
+              }
+              <p class="text-foreground text-sm font-medium">
+                {{ event.startsAt | date: 'h:mm a' }}
+                @if (event.endsAt) {
+                  <span class="text-muted-foreground font-normal">
+                    – {{ event.endsAt | date: 'h:mm a' }}
+                  </span>
+                }
+              </p>
+              <p class="text-primary text-xs font-semibold">Open attendance →</p>
+            </div>
+          </a>
+        }
+      </div>
+    }
+  </div>
+</div>

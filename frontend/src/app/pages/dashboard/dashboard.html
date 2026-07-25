@@ -1,0 +1,259 @@
+<div class="flex flex-col gap-4 sm:gap-6">
+  <section
+    class="from-primary via-primary to-primary/80 text-primary-foreground relative overflow-hidden rounded-2xl bg-gradient-to-br p-4 shadow-lg sm:p-6 md:p-8"
+  >
+    <div class="bg-primary-foreground/10 pointer-events-none absolute -top-24 -right-16 size-72 rounded-full blur-2xl"></div>
+    <div class="bg-primary-foreground/5 pointer-events-none absolute -bottom-32 right-40 size-80 rounded-full blur-3xl"></div>
+
+    <div class="relative flex flex-col gap-4 sm:gap-6">
+      <div>
+        <p class="text-primary-foreground/70 flex items-center gap-2 text-xs font-medium sm:text-sm">
+          <ng-icon name="lucideCalendarDays" class="text-base" />
+          {{ todayLabel }}
+        </p>
+        <h2 class="mt-1 text-xl font-bold tracking-tight sm:text-2xl md:text-3xl">Event Overview</h2>
+        <p class="text-primary-foreground/70 mt-1 text-xs sm:text-sm">
+          Attendance analytics for LPU-Laguna events
+        </p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
+        <div class="bg-primary-foreground/10 flex items-center gap-2 rounded-xl p-3 backdrop-blur-sm sm:gap-3 sm:p-4">
+          <ng-icon name="lucideCalendarClock" class="text-primary-foreground/80 size-7 shrink-0 sm:text-2xl" />
+          <div class="min-w-0 leading-tight">
+            <p class="text-xl font-bold tabular-nums sm:text-2xl">
+              @if (loading()) {
+                —
+              } @else {
+                {{ summary()?.eventsToday ?? 0 | number }}
+              }
+            </p>
+            <p class="text-primary-foreground/70 text-[11px] font-medium sm:text-xs">Events today</p>
+          </div>
+        </div>
+        <div class="bg-primary-foreground/10 flex items-center gap-2 rounded-xl p-3 backdrop-blur-sm sm:gap-3 sm:p-4">
+          <ng-icon name="lucideCalendarCheck" class="text-primary-foreground/80 size-7 shrink-0 sm:text-2xl" />
+          <div class="min-w-0 leading-tight">
+            <p class="text-xl font-bold tabular-nums sm:text-2xl">
+              @if (loading()) {
+                —
+              } @else {
+                {{ summary()?.upcomingEvents ?? 0 | number }}
+              }
+            </p>
+            <p class="text-primary-foreground/70 text-[11px] font-medium sm:text-xs">Upcoming</p>
+          </div>
+        </div>
+        <div class="bg-primary-foreground/10 flex items-center gap-2 rounded-xl p-3 backdrop-blur-sm sm:gap-3 sm:p-4">
+          <ng-icon name="lucideUsers" class="text-primary-foreground/80 size-7 shrink-0 sm:text-2xl" />
+          <div class="min-w-0 leading-tight">
+            <p class="text-xl font-bold tabular-nums sm:text-2xl">
+              @if (loading()) {
+                —
+              } @else {
+                {{ summary()?.activePortalUsers ?? 0 | number }}
+              }
+            </p>
+            <p class="text-primary-foreground/70 text-[11px] font-medium sm:text-xs">Active users</p>
+          </div>
+        </div>
+        <div class="bg-primary-foreground/10 flex items-center gap-2 rounded-xl p-3 backdrop-blur-sm sm:gap-3 sm:p-4">
+          <ng-icon name="lucideUserCheck" class="text-primary-foreground/80 size-7 shrink-0 sm:text-2xl" />
+          <div class="min-w-0 leading-tight">
+            <p class="text-xl font-bold tabular-nums sm:text-2xl">
+              @if (loading()) {
+                —
+              } @else {
+                {{ summary()?.currentlyCheckedIn ?? 0 | number }}
+              }
+            </p>
+            <p class="text-primary-foreground/70 text-[11px] font-medium sm:text-xs">Checked in now</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  @if (error()) {
+    <p class="text-destructive text-sm" role="alert">{{ error() }}</p>
+  }
+
+  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
+    @for (stat of stats(); track stat.label) {
+      <div
+        hlmCard
+        class="group flex flex-col gap-2 rounded-2xl border-0 p-4 shadow-sm ring-1 ring-black/5 transition-all hover:-translate-y-0.5 hover:shadow-md sm:gap-3 sm:p-5"
+      >
+        <div class="flex items-start justify-between gap-2">
+          <p class="text-muted-foreground text-sm font-medium">{{ stat.label }}</p>
+          <div
+            class="flex size-9 shrink-0 items-center justify-center rounded-xl transition-transform group-hover:scale-110 sm:size-10"
+            [class]="{
+              'bg-primary/10 text-primary': stat.tone === 'primary',
+              'bg-emerald-500/10 text-emerald-600': stat.tone === 'emerald',
+              'bg-amber-500/10 text-amber-600': stat.tone === 'amber',
+              'bg-sky-500/10 text-sky-600': stat.tone === 'sky',
+              'bg-violet-500/10 text-violet-600': stat.tone === 'violet',
+              'bg-rose-500/10 text-rose-600': stat.tone === 'rose',
+            }"
+          >
+            <ng-icon [name]="stat.icon" class="text-lg sm:text-xl" />
+          </div>
+        </div>
+        <p class="text-foreground text-2xl font-bold tracking-tight tabular-nums sm:text-3xl">
+          @if (loading()) {
+            —
+          } @else {
+            {{ stat.value | number }}
+          }
+        </p>
+        @if (stat.caption) {
+          <p class="text-muted-foreground text-xs">{{ stat.caption }}</p>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+    <section hlmCard class="rounded-2xl border-0 p-4 shadow-sm ring-1 ring-black/5 sm:p-5">
+      <div class="mb-4 flex items-center justify-between gap-2">
+        <div>
+          <h3 class="text-foreground text-base font-semibold tracking-tight">Attendance mix</h3>
+          <p class="text-muted-foreground text-xs">Students vs employees across all events</p>
+        </div>
+      </div>
+
+      @if (loading()) {
+        <p class="text-muted-foreground py-8 text-center text-sm">Loading…</p>
+      } @else if ((summary()?.totalCheckIns ?? 0) === 0) {
+        <p class="text-muted-foreground py-8 text-center text-sm">No attendance recorded yet.</p>
+      } @else {
+        <div class="space-y-4">
+          <div class="bg-muted flex h-3 overflow-hidden rounded-full">
+            <div
+              class="bg-amber-500 transition-all"
+              [style.width.%]="studentShare()"
+              title="Students"
+            ></div>
+            <div
+              class="bg-sky-500 transition-all"
+              [style.width.%]="employeeShare()"
+              title="Employees"
+            ></div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="rounded-xl bg-amber-500/10 px-3 py-3">
+              <p class="text-muted-foreground text-xs font-medium">Students</p>
+              <p class="text-foreground mt-1 text-xl font-bold tabular-nums">
+                {{ summary()!.studentCheckIns | number }}
+              </p>
+              <p class="text-amber-700 text-xs font-semibold">{{ studentShare() }}%</p>
+            </div>
+            <div class="rounded-xl bg-sky-500/10 px-3 py-3">
+              <p class="text-muted-foreground text-xs font-medium">Employees</p>
+              <p class="text-foreground mt-1 text-xl font-bold tabular-nums">
+                {{ summary()!.employeeCheckIns | number }}
+              </p>
+              <p class="text-sky-700 text-xs font-semibold">{{ employeeShare() }}%</p>
+            </div>
+          </div>
+        </div>
+      }
+    </section>
+
+    <section hlmCard class="rounded-2xl border-0 p-4 shadow-sm ring-1 ring-black/5 sm:p-5">
+      <div class="mb-4">
+        <h3 class="text-foreground text-base font-semibold tracking-tight">Top events by attendance</h3>
+        <p class="text-muted-foreground text-xs">Highest unique check-ins</p>
+      </div>
+
+      @if (loading()) {
+        <p class="text-muted-foreground py-8 text-center text-sm">Loading…</p>
+      } @else if ((summary()?.topEventsByAttendance?.length ?? 0) === 0) {
+        <p class="text-muted-foreground py-8 text-center text-sm">No attendance data yet.</p>
+      } @else {
+        <ul class="space-y-3">
+          @for (event of summary()!.topEventsByAttendance; track event.eventId) {
+            <li class="space-y-1.5">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <a
+                    class="text-foreground hover:text-primary block truncate text-sm font-semibold"
+                    [routerLink]="['/events', event.eventId, 'attendance']"
+                  >
+                    {{ event.title }}
+                  </a>
+                  <p class="text-muted-foreground text-xs">
+                    {{ event.startsAt | date: 'MMM d, y' }}
+                    ·
+                    {{ event.studentAttendees | number }} students
+                    ·
+                    {{ event.employeeAttendees | number }} employees
+                  </p>
+                </div>
+                <span class="text-foreground shrink-0 text-sm font-bold tabular-nums">
+                  {{ event.attendees | number }}
+                </span>
+              </div>
+              <div class="bg-muted h-2 overflow-hidden rounded-full">
+                <div class="bg-primary h-full rounded-full transition-all" [style.width]="barWidth(event.attendees)"></div>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </div>
+
+  <section hlmCard class="rounded-2xl border-0 p-4 shadow-sm ring-1 ring-black/5 sm:p-5">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+      <div>
+        <h3 class="text-foreground text-base font-semibold tracking-tight">Upcoming events</h3>
+        <p class="text-muted-foreground text-xs">Next active events from now</p>
+      </div>
+      <a hlmBtn variant="outline" size="sm" routerLink="/events">Manage events</a>
+    </div>
+
+    @if (loading()) {
+      <p class="text-muted-foreground py-8 text-center text-sm">Loading…</p>
+    } @else if ((summary()?.upcomingEventList?.length ?? 0) === 0) {
+      <p class="text-muted-foreground py-8 text-center text-sm">No upcoming active events.</p>
+    } @else {
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[36rem] text-left text-sm">
+          <thead>
+            <tr class="text-muted-foreground border-b text-xs">
+              <th class="pb-2 pr-3 font-medium">Event</th>
+              <th class="pb-2 pr-3 font-medium">Starts</th>
+              <th class="pb-2 pr-3 font-medium">Location</th>
+              <th class="pb-2 text-right font-medium">Attendees</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (event of summary()!.upcomingEventList; track event.eventId) {
+              <tr class="border-b border-black/5 last:border-0">
+                <td class="py-3 pr-3">
+                  <a
+                    class="text-foreground hover:text-primary font-semibold"
+                    [routerLink]="['/events', event.eventId, 'attendance']"
+                  >
+                    {{ event.title }}
+                  </a>
+                </td>
+                <td class="text-muted-foreground py-3 pr-3 whitespace-nowrap">
+                  {{ event.startsAt | date: 'MMM d, y h:mm a' }}
+                </td>
+                <td class="text-muted-foreground py-3 pr-3">
+                  {{ event.location || '—' }}
+                </td>
+                <td class="py-3 text-right font-semibold tabular-nums">
+                  {{ event.attendees | number }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</div>

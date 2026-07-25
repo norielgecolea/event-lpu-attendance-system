@@ -1,0 +1,110 @@
+services:
+
+  postgres:
+    image: postgres:17
+    container_name: event-postgres-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - ./data/postgres-data:/var/lib/postgresql/data
+      - ./data/postgres/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  tomcat:
+    build:
+      context: ./docker/tomcat
+    image: lpu-event-attendance-tomcat:11-jdk21-ffmpeg
+    container_name: event-tomcat_server
+    ports:
+      - "${TOMCAT_PORT:-8081}:8080"
+    environment:
+      # Local event DB (users, events, time logs)
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      # Gate attendance DB (students, employees, RFID) — IP/host from .env
+      GATE_ATTENDANCE_DB_HOST: ${GATE_ATTENDANCE_DB_HOST}
+      GATE_ATTENDANCE_DB_PORT: ${GATE_ATTENDANCE_DB_PORT:-5432}
+      GATE_ATTENDANCE_DB_NAME: ${GATE_ATTENDANCE_DB_NAME:-postgres}
+      GATE_ATTENDANCE_DB_USER: ${GATE_ATTENDANCE_DB_USER:-postgres}
+      GATE_ATTENDANCE_DB_PASSWORD: ${GATE_ATTENDANCE_DB_PASSWORD}
+      GATE_ATTENDANCE_URL: ${GATE_ATTENDANCE_URL:-http://127.0.0.1}
+      APP_JWT_SECRET: ${APP_JWT_SECRET:-bHB1LWV2ZW50LWF0dGVuZGFuY2Utand0LXNlY3JldC1rZXktMzJieXRlcyE=}
+      APP_PICTURES_DIR: /usr/local/tomcat/pictures
+      APP_VIDEOS_DIR: /usr/local/tomcat/videos
+      JAVA_OPTS: "-Dlpu.log.dir=/usr/local/tomcat/logs"
+    volumes:
+      # Deploy: mvn -f event-attendance-system clean package && cp event-attendance-system/target/event-attendance-system.war data/tomcat/webapps/
+      - ./data/tomcat/webapps:/usr/local/tomcat/webapps
+      - ./data/tomcat/logs:/usr/local/tomcat/logs
+      - ./data/pictures:/usr/local/tomcat/pictures
+      - ./data/videos:/usr/local/tomcat/videos
+    depends_on:
+      postgres:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  angular:
+    image: node:24-alpine
+    container_name: event-angular-app
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - angular_node_modules:/app/node_modules
+    ports:
+      - "4201:4200"
+    environment:
+      BACKEND_URL: http://tomcat:8080
+      BACKEND_CONTEXT_PATH: /event-attendance-system
+      GATE_ATTENDANCE_URL: ${GATE_ATTENDANCE_URL:-http://127.0.0.1}
+      HUSKY: "0"
+      NG_ALLOWED_HOSTS: "*"
+      NG_TRUST_PROXY_HEADERS: "X-FORWARDED-FOR,X-FORWARDED-PROTO,X-FORWARDED-HOST"
+    command: sh -c "test -f package.json || { echo 'Missing package.json — mount ./frontend to /app'; exit 1; } && npm install && npx ng serve --host 0.0.0.0 --port 4200 --proxy-config proxy.conf.js"
+    stdin_open: true
+    tty: true
+    depends_on:
+      - tomcat
+
+  web:
+    image: nginx:latest
+    container_name: event-web
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./data/web/templates:/etc/nginx/templates
+      - ./data/web/certs:/etc/nginx/certs:ro
+    environment:
+      SERVER_NAME: ${SERVER_NAME:-localhost}
+      UPSTREAM_HOST: angular
+      UPSTREAM_PORT: 4200
+      TOMCAT_HOST: tomcat
+      TOMCAT_PORT: 8080
+    depends_on:
+      - angular
+      - tomcat
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: event-cloudflared
+    restart: unless-stopped
+    profiles: ["tunnel"]
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    volumes:
+      - ./data/cloudflared:/etc/cloudflared
+    depends_on:
+      - web
+
+volumes:
+  angular_node_modules:

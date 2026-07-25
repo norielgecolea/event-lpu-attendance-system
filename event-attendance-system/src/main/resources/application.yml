@@ -1,0 +1,50 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: lpu-event-attendance-system
+  # Primary datasource = this system's DB (events, users, time logs)
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/postgres}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:Lpu-1234}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      pool-name: event-db
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+      enabled: true
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+app:
+  jwt:
+    secret: ${APP_JWT_SECRET:bHB1LWV2ZW50LWF0dGVuZGFuY2Utand0LXNlY3JldC1rZXktMzJieXRlcyE=}
+    expiration-ms: ${APP_JWT_EXPIRATION_MS:28800000}
+    remember-expiration-ms: ${APP_JWT_REMEMBER_EXPIRATION_MS:315360000000}
+  # Gate attendance Postgres — students, employees, RFID (read-only)
+  gate-attendance:
+    db-host: ${GATE_ATTENDANCE_DB_HOST:127.0.0.1}
+    db-port: ${GATE_ATTENDANCE_DB_PORT:5432}
+    db-name: ${GATE_ATTENDANCE_DB_NAME:postgres}
+    db-username: ${GATE_ATTENDANCE_DB_USER:postgres}
+    db-password: ${GATE_ATTENDANCE_DB_PASSWORD:${SPRING_DATASOURCE_PASSWORD:Lpu-1234}}
+    # Web base URL for photos (defaults to http://db-host when empty)
+    url: ${GATE_ATTENDANCE_URL:}
+  upload:
+    pictures-dir: ${APP_PICTURES_DIR:pictures}
+
+logging:
+  config: classpath:log4j2.xml
