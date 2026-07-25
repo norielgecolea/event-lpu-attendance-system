@@ -23,6 +23,7 @@ import {
   lucideScanBarcode,
   lucideUserRound,
 } from '@ng-icons/lucide';
+import { filter } from 'rxjs';
 import { HlmButton } from '@spartan-ng/helm/button';
 import {
   EventsApiService,
@@ -66,7 +67,6 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
   protected readonly identifier = signal('');
-  protected readonly submitting = signal(false);
   protected readonly tapError = signal<string | null>(null);
   protected readonly lastTap = signal<EventAttendanceLog | null>(null);
   protected readonly flash = signal<Flash>('idle');
@@ -80,6 +80,9 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
   private tickTimer?: ReturnType<typeof setInterval>;
   private focusTimer?: ReturnType<typeof setInterval>;
   private clearTimer?: ReturnType<typeof setTimeout>;
+  private lastScanId: string | null = null;
+  private lastScanAt = 0;
+  private inFlight = 0;
 
   protected readonly windowStatus = computed<WindowStatus>(() => {
     const event = this.event();
@@ -88,6 +91,9 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
     }
     if (!event) {
       return 'missing';
+    }
+    if (!event.active) {
+      return 'ended';
     }
     const now = this.nowTick();
     const start = new Date(event.startsAt).getTime();
@@ -101,14 +107,13 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
     return 'open';
   });
 
-  protected readonly canTap = computed(
-    () => this.windowStatus() === 'open' && !this.submitting(),
-  );
+  /** Input stays enabled while open — taps are not blocked by in-flight requests. */
+  protected readonly canTap = computed(() => this.windowStatus() === 'open');
 
   constructor() {
     if (isPlatformBrowser(this.platformId)) {
       this.clockTimer = setInterval(() => this.clock.set(new Date()), 1000);
-      this.tickTimer = setInterval(() => this.nowTick.set(Date.now()), 1000);
+      this.tickTimer = setInterval(() => this.nowTick.set(Date.now()), 250);
     }
 
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
@@ -119,12 +124,35 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
       }
       this.loadEvent(id);
     });
+
+    this.notifications.events$
+      .pipe(
+        filter((e) => e.type === 'EVENT_UPDATED'),
+        takeUntilDestroyed(),
+      )
+      .subscribe((message) => {
+        const payload = message.payload as EventRecord | null;
+        if (!payload?.id) {
+          return;
+        }
+        const current = this.event();
+        if (!current || String(payload.id) !== String(current.id)) {
+          return;
+        }
+        this.event.set({
+          ...current,
+          ...payload,
+          id: String(payload.id),
+        });
+        this.nowTick.set(Date.now());
+        queueMicrotask(() => this.focusInput());
+      });
   }
 
   ngAfterViewInit(): void {
     if (isPlatformBrowser(this.platformId)) {
       this.focusInput();
-      this.focusTimer = setInterval(() => this.focusInput(), 1500);
+      this.focusTimer = setInterval(() => this.focusInput(), 400);
     }
   }
 
@@ -139,34 +167,39 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
   protected onSubmit(): void {
     const event = this.event();
     const identifier = this.identifier().trim();
+
+    // Clear immediately so the next RFID scan can land without waiting on the network.
+    this.identifier.set('');
+    queueMicrotask(() => this.focusInput());
+
+    if (!event || !this.canTap() || !identifier) {
+      return;
+    }
+
+    const now = Date.now();
+    if (identifier === this.lastScanId && now - this.lastScanAt < 750) {
+      return;
+    }
+    this.lastScanId = identifier;
+    this.lastScanAt = now;
     this.tapError.set(null);
+    this.inFlight += 1;
 
-    if (!event || !this.canTap()) {
-      this.identifier.set('');
-      return;
-    }
-    if (!identifier) {
-      return;
-    }
-
-    this.submitting.set(true);
     this.api.publicTap(event.id, identifier).subscribe({
       next: (log) => {
+        this.inFlight = Math.max(0, this.inFlight - 1);
         this.lastTap.set(log);
         this.flash.set(log.lastAction === 'TIME_OUT' ? 'out' : 'in');
         this.animKey.update((k) => k + 1);
-        this.identifier.set('');
-        this.submitting.set(false);
         this.scheduleClear();
         this.focusInput();
       },
       error: (err: { error?: { message?: string }; status?: number }) => {
-        this.submitting.set(false);
+        this.inFlight = Math.max(0, this.inFlight - 1);
         this.lastTap.set(null);
         this.flash.set('error');
         this.animKey.update((k) => k + 1);
         this.tapError.set(err?.error?.message ?? 'Tap failed. Please try again.');
-        this.identifier.set('');
         this.scheduleClear();
         this.focusInput();
       },
@@ -176,15 +209,18 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
   private scheduleClear(): void {
     clearTimeout(this.clearTimer);
     this.clearTimer = setTimeout(() => {
+      if (this.inFlight > 0) {
+        return;
+      }
       this.lastTap.set(null);
       this.tapError.set(null);
       this.flash.set('idle');
-    }, 6000);
+    }, 2800);
   }
 
   private focusInput(): void {
     const el = this.idInput?.nativeElement;
-    if (!el || this.submitting()) {
+    if (!el || el.disabled) {
       return;
     }
     if (document.activeElement !== el) {

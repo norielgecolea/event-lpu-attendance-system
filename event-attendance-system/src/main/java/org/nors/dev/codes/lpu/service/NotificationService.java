@@ -25,6 +25,8 @@ public class NotificationService {
     private static final int SEND_BUFFER_LIMIT = 512 * 1024;
 
     private final Map<String, WebSocketSession> portalSessions = new ConcurrentHashMap<>();
+    /** Kiosk session id → decorated session (for push). */
+    private final Map<String, WebSocketSession> kioskSessions = new ConcurrentHashMap<>();
     /** Kiosk session id → event id string. */
     private final Map<String, String> eventKiosks = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper;
@@ -42,8 +44,8 @@ public class NotificationService {
                 username,
                 portalSessions.size()
         );
-        sendTo(session, AuthEventMessage.of("AUTH_WS_CONNECTED", "Connected to live notifications"));
-        sendTo(session, currentKioskPresence());
+        sendTo(safe, AuthEventMessage.of("AUTH_WS_CONNECTED", "Connected to live notifications"));
+        sendTo(safe, currentKioskPresence());
     }
 
     public void unregisterPortal(WebSocketSession session) {
@@ -52,6 +54,8 @@ public class NotificationService {
     }
 
     public void registerEventKiosk(WebSocketSession session, Long eventId) {
+        WebSocketSession safe = decorate(session);
+        kioskSessions.put(session.getId(), safe);
         eventKiosks.put(session.getId(), String.valueOf(eventId));
         log.info(
                 "Event kiosk online: session={} eventId={} (kiosks={})",
@@ -63,6 +67,7 @@ public class NotificationService {
     }
 
     public void unregisterEventKiosk(WebSocketSession session) {
+        kioskSessions.remove(session.getId());
         String removed = eventKiosks.remove(session.getId());
         log.info(
                 "Event kiosk offline: session={} eventId={} (kiosks={})",
@@ -92,6 +97,17 @@ public class NotificationService {
         ));
     }
 
+    /** Push updated event (times/active/etc.) to portal admins and open kiosks for that event. */
+    public void broadcastEventUpdated(Long eventId, Object eventPayload) {
+        AuthEventMessage message = AuthEventMessage.withPayload(
+                "EVENT_UPDATED",
+                "Event details updated",
+                eventPayload
+        );
+        broadcast(message);
+        sendToEventKiosks(String.valueOf(eventId), message);
+    }
+
     public void broadcast(AuthEventMessage event) {
         String payload;
         try {
@@ -101,6 +117,37 @@ public class NotificationService {
             return;
         }
         broadcastRaw(payload);
+    }
+
+    private void sendToEventKiosks(String eventId, AuthEventMessage event) {
+        String payload;
+        try {
+            payload = objectMapper.writeValueAsString(event);
+        } catch (IOException ex) {
+            log.error("Failed to serialize kiosk WS event", ex);
+            return;
+        }
+        List<String> dead = new ArrayList<>();
+        for (Map.Entry<String, String> entry : eventKiosks.entrySet()) {
+            if (!eventId.equals(entry.getValue())) {
+                continue;
+            }
+            WebSocketSession session = kioskSessions.get(entry.getKey());
+            if (session == null || !session.isOpen()) {
+                dead.add(entry.getKey());
+                continue;
+            }
+            try {
+                session.sendMessage(new TextMessage(payload));
+            } catch (Exception ex) {
+                log.warn("Failed to send EVENT_UPDATED to kiosk {}", entry.getKey(), ex);
+                dead.add(entry.getKey());
+            }
+        }
+        for (String id : dead) {
+            kioskSessions.remove(id);
+            eventKiosks.remove(id);
+        }
     }
 
     private AuthEventMessage currentKioskPresence() {
@@ -140,9 +187,8 @@ public class NotificationService {
     private void sendTo(WebSocketSession session, AuthEventMessage event) {
         try {
             String payload = objectMapper.writeValueAsString(event);
-            WebSocketSession target = portalSessions.getOrDefault(session.getId(), session);
-            if (target.isOpen()) {
-                target.sendMessage(new TextMessage(payload));
+            if (session.isOpen()) {
+                session.sendMessage(new TextMessage(payload));
             }
         } catch (Exception ex) {
             log.warn("Failed to send WS message to {}", session.getId(), ex);

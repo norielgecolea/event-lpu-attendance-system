@@ -163,6 +163,18 @@ export class NotificationService {
       this.kioskReconnectAttempt = 0;
     };
 
+    this.kioskSocket.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data as string) as AuthEventMessage;
+        this.eventsSubject.next(payload);
+        if (payload.type === 'EVENT_KIOSK_PRESENCE') {
+          this.applyKioskPresence(payload);
+        }
+      } catch {
+        // ignore malformed payloads
+      }
+    };
+
     this.kioskSocket.onclose = () => {
       this.kioskSocket = null;
       this.scheduleKioskReconnect();

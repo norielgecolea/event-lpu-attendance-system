@@ -24,10 +24,16 @@ public class EventService {
 
     private final EventRepository eventRepository;
     private final PhotoStorageService photoStorageService;
+    private final NotificationService notificationService;
 
-    public EventService(EventRepository eventRepository, PhotoStorageService photoStorageService) {
+    public EventService(
+            EventRepository eventRepository,
+            PhotoStorageService photoStorageService,
+            NotificationService notificationService
+    ) {
         this.eventRepository = eventRepository;
         this.photoStorageService = photoStorageService;
+        this.notificationService = notificationService;
     }
 
     @Transactional(readOnly = true)
@@ -101,7 +107,9 @@ public class EventService {
         eventRepository.save(event);
 
         log.info("Updated event id={} title={}", id, event.getTitle());
-        return EventResponse.from(event);
+        EventResponse response = EventResponse.from(event);
+        notificationService.broadcastEventUpdated(id, response);
+        return response;
     }
 
     @Transactional
@@ -111,7 +119,9 @@ public class EventService {
         event.setUpdatedAt(Instant.now());
         eventRepository.save(event);
         log.info("{} event id={}", active ? "Activated" : "Deactivated", id);
-        return EventResponse.from(event);
+        EventResponse response = EventResponse.from(event);
+        notificationService.broadcastEventUpdated(id, response);
+        return response;
     }
 
     @Transactional
