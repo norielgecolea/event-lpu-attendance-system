@@ -77,14 +77,17 @@ services:
       - tomcat
 
   web:
-    image: nginx:latest
+    build:
+      context: ./docker/web
+    image: lpu-event-attendance-nginx:latest
     container_name: event-web
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - ./data/web/templates:/etc/nginx/templates
-      - ./data/web/certs:/etc/nginx/certs:ro
+      # Writable so missing (gitignored) certs can be auto-generated on first start
+      - ./data/web/certs:/etc/nginx/certs
     environment:
       SERVER_NAME: ${SERVER_NAME:-localhost}
       UPSTREAM_HOST: angular

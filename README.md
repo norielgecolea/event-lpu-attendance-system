@@ -35,8 +35,9 @@ cp .env.example .env
 mvn -f event-attendance-system clean package
 cp event-attendance-system/target/event-attendance-system.war data/tomcat/webapps/
 
-docker compose up -d
+docker compose up -d --build
 # → http://localhost  /  https://localhost
+# TLS: data/web/certs is gitignored; nginx auto-creates a self-signed cert on first start.
 ```
 
 Login: `superadmin` / `SuperAdmin@123`
