@@ -36,6 +36,8 @@ public class EventAttendanceService {
     private static final String ACTION_OUT = "TIME_OUT";
     private static final String TYPE_STUDENT = "STUDENT";
     private static final String TYPE_EMPLOYEE = "EMPLOYEE";
+    /** Ignore rapid re-taps and return the previous transaction instead. */
+    private static final Duration TAP_COOLDOWN = Duration.ofSeconds(10);
 
     private final EventRepository eventRepository;
     private final EventAttendanceLogRepository attendanceLogRepository;
@@ -230,6 +232,15 @@ public class EventAttendanceService {
             existing = attendanceLogRepository
                     .findByEventAndStudentForUpdate(event.getId(), student.getId())
                     .orElse(null);
+            if (isWithinCooldown(existing, now)) {
+                log.info("TAP cooldown eventId={} studentNo={}", eventId, student.getStudentNo());
+                return EventAttendanceLogResponse.from(
+                        existing,
+                        student.getPhoto(),
+                        student.getBirthdate(),
+                        true
+                );
+            }
             result = applyTap(
                     existing,
                     event.getId(),
@@ -255,6 +266,15 @@ public class EventAttendanceService {
         existing = attendanceLogRepository
                 .findByEventAndEmployeeForUpdate(event.getId(), employee.getId())
                 .orElse(null);
+        if (isWithinCooldown(existing, now)) {
+            log.info("TAP cooldown eventId={} employeeNo={}", eventId, employee.getEmployeeNo());
+            return EventAttendanceLogResponse.from(
+                    existing,
+                    employee.getPhoto(),
+                    employee.getBirthdate(),
+                    true
+            );
+        }
         result = applyTap(
                 existing,
                 event.getId(),
@@ -275,6 +295,12 @@ public class EventAttendanceService {
         );
         notificationService.broadcastAttendanceTap(response);
         return response;
+    }
+
+    private static boolean isWithinCooldown(EventAttendanceLog existing, Instant now) {
+        return existing != null
+                && existing.getUpdatedAt() != null
+                && now.isBefore(existing.getUpdatedAt().plus(TAP_COOLDOWN));
     }
 
     private EventAttendanceLog applyTap(

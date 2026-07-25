@@ -73,3 +73,21 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_event_attendance_employee
 
 CREATE INDEX IF NOT EXISTS idx_event_attendance_event
     ON event_attendance_logs (event_id, updated_at DESC);
+
+CREATE TABLE IF NOT EXISTS app_settings (
+    setting_key     VARCHAR(100) PRIMARY KEY,
+    setting_value   VARCHAR(500) NOT NULL,
+    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS event_tones (
+    id              BIGSERIAL PRIMARY KEY,
+    file_path       VARCHAR(300) NOT NULL,
+    original_name   VARCHAR(300) NOT NULL,
+    content_type    VARCHAR(100) NOT NULL,
+    size_bytes      BIGINT       NOT NULL,
+    uploaded_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_event_tones_uploaded
+    ON event_tones (uploaded_at ASC, id ASC);

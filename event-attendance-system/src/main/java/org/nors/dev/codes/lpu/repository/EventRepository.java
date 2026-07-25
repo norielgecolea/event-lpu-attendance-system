@@ -132,4 +132,12 @@ public class EventRepository {
     public Event save(Event event) {
         return currentSession().merge(event);
     }
+
+    @Transactional
+    public void delete(Event event) {
+        Session session = currentSession();
+        Event managed = session.contains(event) ? event : session.merge(event);
+        session.remove(managed);
+        session.flush();
+    }
 }

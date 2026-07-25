@@ -19,6 +19,11 @@ module.exports = {
     secure: false,
     changeOrigin: true,
   },
+  [`${contextPath}/tones`]: {
+    target: backendUrl,
+    secure: false,
+    changeOrigin: true,
+  },
   '/gate-attendance': {
     target: gateAttendanceUrl,
     secure: false,

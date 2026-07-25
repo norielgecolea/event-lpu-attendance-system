@@ -21,3 +21,6 @@ target/
 .DS_Store
 .idea/
 *.iml
+
+data/tones/*
+!data/tones/.gitkeep

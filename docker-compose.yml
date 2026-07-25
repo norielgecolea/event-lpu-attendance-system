@@ -42,6 +42,7 @@ services:
       APP_JWT_SECRET: ${APP_JWT_SECRET:-bHB1LWV2ZW50LWF0dGVuZGFuY2Utand0LXNlY3JldC1rZXktMzJieXRlcyE=}
       APP_PICTURES_DIR: /usr/local/tomcat/pictures
       APP_VIDEOS_DIR: /usr/local/tomcat/videos
+      APP_TONES_DIR: /usr/local/tomcat/tones
       JAVA_OPTS: "-Dlpu.log.dir=/usr/local/tomcat/logs"
     volumes:
       # WAR is baked into the image and copied here on start (no manual mvn/cp needed)
@@ -49,6 +50,7 @@ services:
       - ./data/tomcat/logs:/usr/local/tomcat/logs
       - ./data/pictures:/usr/local/tomcat/pictures
       - ./data/videos:/usr/local/tomcat/videos
+      - ./data/tones:/usr/local/tomcat/tones
     depends_on:
       postgres:
         condition: service_healthy

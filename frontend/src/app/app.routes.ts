@@ -9,12 +9,14 @@ import { EventAttendance } from './pages/events/event-attendance';
 import { Students } from './pages/students/students';
 import { Employees } from './pages/employees/employees';
 import { Users } from './pages/users/users';
+import { EventTonesSettings } from './pages/settings/event-tones-settings';
 import { adminPortalGuard, allowRoles, guestGuard } from './core/auth/auth.guards';
 
 const PORTAL_ROLES = ['SUPERADMIN', 'ADMIN', 'OSAS', 'SCANNER'] as const;
 const EVENT_ROLES = ['SUPERADMIN', 'ADMIN', 'OSAS'] as const;
 const ADMIN_ROLES = ['SUPERADMIN', 'ADMIN'] as const;
 const USER_MGMT_ROLES = ['SUPERADMIN', 'ADMIN'] as const;
+const TONE_ROLES = ['SUPERADMIN', 'ADMIN', 'OSAS'] as const;
 
 export const routes: Routes = [
   { path: '', component: Login, canActivate: [guestGuard], pathMatch: 'full' },
@@ -55,6 +57,11 @@ export const routes: Routes = [
         path: 'users',
         component: Users,
         canActivate: [allowRoles(...USER_MGMT_ROLES)],
+      },
+      {
+        path: 'settings/event-tones',
+        component: EventTonesSettings,
+        canActivate: [allowRoles(...TONE_ROLES)],
       },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ],

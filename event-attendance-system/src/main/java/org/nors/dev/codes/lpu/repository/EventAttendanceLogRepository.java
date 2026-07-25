@@ -152,4 +152,12 @@ public class EventAttendanceLogRepository {
     public EventAttendanceLog save(EventAttendanceLog log) {
         return currentSession().merge(log);
     }
+
+    @Transactional
+    public int deleteByEventId(Long eventId) {
+        return currentSession()
+                .createMutationQuery("DELETE FROM EventAttendanceLog l WHERE l.eventId = :eventId")
+                .setParameter("eventId", eventId)
+                .executeUpdate();
+    }
 }

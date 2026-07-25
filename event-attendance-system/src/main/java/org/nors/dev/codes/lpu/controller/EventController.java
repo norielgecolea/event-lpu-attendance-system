@@ -114,8 +114,9 @@ public class EventController {
 
     @PreAuthorize("hasRole('SUPERADMIN')")
     @DeleteMapping("/{id}")
-    public ResponseEntity<EventResponse> softDelete(@PathVariable Long id) {
-        return ResponseEntity.ok(eventService.softDelete(id));
+    public ResponseEntity<Map<String, String>> delete(@PathVariable Long id) {
+        eventService.delete(id);
+        return ResponseEntity.ok(Map.of("message", "Event deleted"));
     }
 
     private EventRequest parseEvent(String eventJson) {

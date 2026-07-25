@@ -45,6 +45,8 @@ app:
     url: ${GATE_ATTENDANCE_URL:}
   upload:
     pictures-dir: ${APP_PICTURES_DIR:pictures}
+    tones-dir: ${APP_TONES_DIR:tones}
+    ffmpeg-path: ${APP_FFMPEG_PATH:ffmpeg}
 
 logging:
   config: classpath:log4j2.xml

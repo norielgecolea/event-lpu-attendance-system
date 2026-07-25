@@ -21,23 +21,33 @@ public record EventAttendanceLogResponse(
         String tappedByUserId,
         int tapCount,
         boolean birthday,
+        boolean duplicate,
         Instant createdAt,
         Instant updatedAt
 ) {
     private static final ZoneId APP_ZONE = ZoneId.of("Asia/Manila");
 
     public static EventAttendanceLogResponse from(EventAttendanceLog log) {
-        return from(log, null, null);
+        return from(log, null, null, false);
     }
 
     public static EventAttendanceLogResponse from(EventAttendanceLog log, String personPhoto) {
-        return from(log, personPhoto, null);
+        return from(log, personPhoto, null, false);
     }
 
     public static EventAttendanceLogResponse from(
             EventAttendanceLog log,
             String personPhoto,
             LocalDate birthdate
+    ) {
+        return from(log, personPhoto, birthdate, false);
+    }
+
+    public static EventAttendanceLogResponse from(
+            EventAttendanceLog log,
+            String personPhoto,
+            LocalDate birthdate,
+            boolean duplicate
     ) {
         return new EventAttendanceLogResponse(
                 String.valueOf(log.getId()),
@@ -55,6 +65,7 @@ public record EventAttendanceLogResponse(
                 log.getTappedByUserId() == null ? null : String.valueOf(log.getTappedByUserId()),
                 log.getTapCount(),
                 isBirthdayToday(birthdate),
+                duplicate,
                 log.getCreatedAt(),
                 log.getUpdatedAt()
         );

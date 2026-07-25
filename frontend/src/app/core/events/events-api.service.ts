@@ -43,6 +43,8 @@ export interface EventAttendanceLog {
   tappedByUserId?: string | null;
   tapCount?: number;
   birthday?: boolean;
+  /** True when a rapid re-tap returned the previous transaction unchanged. */
+  duplicate?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -118,8 +120,8 @@ export class EventsApiService {
     return this.http.patch<EventRecord>(`${this.eventsUrl}/${id}/active`, { active });
   }
 
-  deactivate(id: string): Observable<EventRecord | { message: string }> {
-    return this.http.delete<EventRecord | { message: string }>(`${this.eventsUrl}/${id}`);
+  delete(id: string): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.eventsUrl}/${id}`);
   }
 
   /** Public kiosk tap (no auth). */

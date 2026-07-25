@@ -9,6 +9,7 @@ import org.apache.logging.log4j.Logger;
 import org.nors.dev.codes.lpu.dto.EventRequest;
 import org.nors.dev.codes.lpu.dto.EventResponse;
 import org.nors.dev.codes.lpu.model.Event;
+import org.nors.dev.codes.lpu.repository.EventAttendanceLogRepository;
 import org.nors.dev.codes.lpu.repository.EventRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -23,15 +24,18 @@ public class EventService {
     private static final ZoneId APP_ZONE = ZoneId.of("Asia/Manila");
 
     private final EventRepository eventRepository;
+    private final EventAttendanceLogRepository attendanceLogRepository;
     private final PhotoStorageService photoStorageService;
     private final NotificationService notificationService;
 
     public EventService(
             EventRepository eventRepository,
+            EventAttendanceLogRepository attendanceLogRepository,
             PhotoStorageService photoStorageService,
             NotificationService notificationService
     ) {
         this.eventRepository = eventRepository;
+        this.attendanceLogRepository = attendanceLogRepository;
         this.photoStorageService = photoStorageService;
         this.notificationService = notificationService;
     }
@@ -124,9 +128,15 @@ public class EventService {
         return response;
     }
 
+    /** Permanently removes the event, its attendance logs, and managed photo (superadmin only). */
     @Transactional
-    public EventResponse softDelete(Long id) {
-        return setActive(id, false);
+    public void delete(Long id) {
+        Event event = requireEvent(id);
+        int removedLogs = attendanceLogRepository.deleteByEventId(id);
+        String photoPath = event.getPhoto();
+        eventRepository.delete(event);
+        photoStorageService.deleteIfManaged(photoPath);
+        log.info("Deleted event id={} title={} attendanceLogs={}", id, event.getTitle(), removedLogs);
     }
 
     private Event requireEvent(Long id) {

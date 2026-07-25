@@ -120,17 +120,17 @@
                   >
                     <ng-icon name="lucideSquarePen" class="text-base" />
                   </button>
-                  @if (event.active && canDelete()) {
+                  @if (canDelete()) {
                     <button
                       hlmBtn
                       size="icon"
                       variant="ghost"
                       class="text-destructive hover:text-destructive hover:bg-background"
-                      aria-label="Deactivate event"
-                      title="Deactivate event"
+                      aria-label="Delete event"
+                      title="Delete event"
                       type="button"
                       [disabled]="busyId() === event.id"
-                      (click)="deactivate(event)"
+                      (click)="delete(event)"
                     >
                       <ng-icon name="lucideTrash2" class="text-base" />
                     </button>

@@ -44,10 +44,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/pictures/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/tones/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/events/today").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/events/*/public").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/event-attendance/public-tap").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/event-attendance/kiosk-status").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/event-tones").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/api/auth/**").authenticated()
                         // Students & employees come from the gate DB — read-only here.
@@ -58,7 +60,9 @@ public class SecurityConfig {
                         .hasAnyRole("SUPERADMIN", "ADMIN")
                         .requestMatchers("/api/employees/**").denyAll()
                         .requestMatchers("/api/users/**").hasAnyRole("SUPERADMIN", "ADMIN")
-                        // Soft-delete / deactivate events: superadmin only
+                        .requestMatchers("/api/event-tones/**")
+                        .hasAnyRole("SUPERADMIN", "ADMIN", "OSAS")
+                        // Permanent event deletion: superadmin only
                         .requestMatchers(HttpMethod.DELETE, "/api/events/**").hasRole("SUPERADMIN")
                         .requestMatchers("/api/events/**").hasAnyRole("SUPERADMIN", "ADMIN", "OSAS")
                         .requestMatchers("/api/dashboard/**")

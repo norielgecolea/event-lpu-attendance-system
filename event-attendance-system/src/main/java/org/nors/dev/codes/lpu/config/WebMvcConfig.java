@@ -20,11 +20,19 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         Path picturesPath = Paths.get(uploadProperties.getPicturesDir()).toAbsolutePath().normalize();
-        String location = picturesPath.toUri().toString();
-        if (!location.endsWith("/")) {
-            location = location + "/";
+        String picturesLocation = picturesPath.toUri().toString();
+        if (!picturesLocation.endsWith("/")) {
+            picturesLocation = picturesLocation + "/";
         }
         registry.addResourceHandler("/pictures/**")
-                .addResourceLocations(location);
+                .addResourceLocations(picturesLocation);
+
+        Path tonesPath = Paths.get(uploadProperties.getTonesDir()).toAbsolutePath().normalize();
+        String tonesLocation = tonesPath.toUri().toString();
+        if (!tonesLocation.endsWith("/")) {
+            tonesLocation = tonesLocation + "/";
+        }
+        registry.addResourceHandler("/tones/**")
+                .addResourceLocations(tonesLocation);
     }
 }

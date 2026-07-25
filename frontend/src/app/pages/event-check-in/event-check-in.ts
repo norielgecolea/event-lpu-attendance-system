@@ -34,6 +34,7 @@ import {
 import { NotificationService } from '../../core/notifications/notification.service';
 import { studentPhotoUrl } from '../../core/students/student-photo.util';
 import { EventKioskSounds } from './event-kiosk-sounds';
+import { EventTonesApiService } from '../../core/settings/event-tones-api.service';
 
 type WindowStatus = 'loading' | 'not_started' | 'open' | 'ended' | 'missing';
 type Flash = 'idle' | 'in' | 'out' | 'error' | 'birthday';
@@ -61,6 +62,7 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
 
   private readonly api = inject(EventsApiService);
   private readonly notifications = inject(NotificationService);
+  private readonly tonesApi = inject(EventTonesApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly sounds = new EventKioskSounds();
@@ -117,6 +119,7 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
     if (isPlatformBrowser(this.platformId)) {
       this.clockTimer = setInterval(() => this.clock.set(new Date()), 1000);
       this.tickTimer = setInterval(() => this.nowTick.set(Date.now()), 250);
+      this.loadToneSettings();
     }
 
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
@@ -130,10 +133,14 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
 
     this.notifications.events$
       .pipe(
-        filter((e) => e.type === 'EVENT_UPDATED'),
+        filter((e) => e.type === 'EVENT_UPDATED' || e.type === 'EVENT_TONES_CHANGED'),
         takeUntilDestroyed(),
       )
       .subscribe((message) => {
+        if (message.type === 'EVENT_TONES_CHANGED') {
+          this.loadToneSettings();
+          return;
+        }
         const payload = message.payload as EventRecord | null;
         if (!payload?.id) {
           return;
@@ -198,7 +205,10 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
           log.birthday ? 'birthday' : log.lastAction === 'TIME_OUT' ? 'out' : 'in',
         );
         this.animKey.update((k) => k + 1);
-        this.playTapSound(log);
+        // Double-tap / cooldown: show last transaction without replaying tones.
+        if (!log.duplicate) {
+          this.playTapSound(log);
+        }
         this.scheduleClear();
         this.focusInput();
       },
@@ -229,6 +239,13 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
     } else {
       this.sounds.playTimeIn();
     }
+  }
+
+  private loadToneSettings(): void {
+    this.tonesApi.getSettings().subscribe({
+      next: (settings) => this.sounds.applySettings(settings),
+      error: () => undefined,
+    });
   }
 
   private scheduleClear(): void {

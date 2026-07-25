@@ -28,7 +28,11 @@ export function canAccessAdminRoute(role: string | null | undefined, route: stri
     return route === '/dashboard';
   }
   if (role === 'OSAS') {
-    return route === '/dashboard' || route.startsWith('/events');
+    return (
+      route === '/dashboard' ||
+      route.startsWith('/events') ||
+      route === '/settings/event-tones'
+    );
   }
   if (role !== 'SUPERADMIN' && role !== 'ADMIN') {
     return false;
@@ -37,7 +41,8 @@ export function canAccessAdminRoute(role: string | null | undefined, route: stri
     route === '/dashboard' ||
     route.startsWith('/events') ||
     route.startsWith('/students') ||
-    route.startsWith('/employees')
+    route.startsWith('/employees') ||
+    route === '/settings/event-tones'
   ) {
     return true;
   }

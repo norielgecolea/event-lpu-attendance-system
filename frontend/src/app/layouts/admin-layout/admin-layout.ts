@@ -17,6 +17,7 @@ import {
   lucideMenu,
   lucidePanelLeft,
   lucideShieldCheck,
+  lucideMusic2,
   lucideUserRound,
   lucideX,
 } from '@ng-icons/lucide';
@@ -60,6 +61,7 @@ interface NavSection {
       lucideGraduationCap,
       lucideBriefcase,
       lucideShieldCheck,
+      lucideMusic2,
       lucidePanelLeft,
       lucideMenu,
       lucideUserRound,
@@ -104,6 +106,7 @@ export class AdminLayout {
         { label: 'Student Records', icon: 'lucideGraduationCap', route: '/students' },
         { label: 'Employee Records', icon: 'lucideBriefcase', route: '/employees' },
         { label: 'User Management', icon: 'lucideShieldCheck', route: '/users' },
+        { label: 'Event Tones', icon: 'lucideMusic2', route: '/settings/event-tones' },
       ],
     },
   ];

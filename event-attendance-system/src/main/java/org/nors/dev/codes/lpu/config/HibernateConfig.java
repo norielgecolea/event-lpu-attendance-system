@@ -3,9 +3,11 @@ package org.nors.dev.codes.lpu.config;
 import java.util.Properties;
 import javax.sql.DataSource;
 import org.hibernate.SessionFactory;
+import org.nors.dev.codes.lpu.model.AppSetting;
 import org.nors.dev.codes.lpu.model.Employee;
 import org.nors.dev.codes.lpu.model.Event;
 import org.nors.dev.codes.lpu.model.EventAttendanceLog;
+import org.nors.dev.codes.lpu.model.EventTone;
 import org.nors.dev.codes.lpu.model.Student;
 import org.nors.dev.codes.lpu.model.User;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -36,7 +38,7 @@ public class HibernateConfig {
         LocalSessionFactoryBean factoryBean = new LocalSessionFactoryBean();
         factoryBean.setDataSource(dataSource);
         factoryBean.setAnnotatedClasses(
-                User.class, Event.class, EventAttendanceLog.class
+                User.class, Event.class, EventAttendanceLog.class, AppSetting.class, EventTone.class
         );
         factoryBean.setHibernateProperties(hibernateProperties(ddlAuto));
         return factoryBean;

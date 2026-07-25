@@ -79,25 +79,27 @@ export class Events {
     this.openForm('edit', event);
   }
 
-  protected deactivate(event: EventRecord): void {
+  protected delete(event: EventRecord): void {
     if (!this.canDelete()) {
       return;
     }
-    if (!confirm(`Deactivate event "${event.title}"?`)) {
+    if (
+      !confirm(
+        `Permanently delete event "${event.title}"?\n\nThis removes the event and all of its attendance logs. This cannot be undone.`,
+      )
+    ) {
       return;
     }
     this.error.set(null);
     this.busyId.set(event.id);
-    this.api.deactivate(event.id).subscribe({
+    this.api.delete(event.id).subscribe({
       next: () => {
-        this.events.update((list) =>
-          list.map((e) => (e.id === event.id ? { ...e, active: false } : e)),
-        );
+        this.events.update((list) => list.filter((e) => e.id !== event.id));
         this.busyId.set(null);
       },
       error: (err: { error?: { message?: string } }) => {
         this.busyId.set(null);
-        this.error.set(err?.error?.message ?? 'Failed to deactivate event');
+        this.error.set(err?.error?.message ?? 'Failed to delete event');
       },
     });
   }
