@@ -63,6 +63,37 @@
   inset: 0;
   z-index: 5;
   overflow: hidden;
+  transition: opacity 0.45s ease;
+}
+
+.kiosk-party.is-leaving {
+  animation: kiosk-party-exit 0.52s ease-in forwards;
+}
+
+.kiosk-party.is-leaving .kiosk-confetti,
+.kiosk-party.is-leaving .kiosk-balloon,
+.kiosk-party.is-leaving .kiosk-firework,
+.kiosk-party.is-leaving .kiosk-firework-spark {
+  animation-play-state: paused;
+  animation: none;
+  transition:
+    opacity 0.45s ease,
+    transform 0.52s ease;
+}
+
+.kiosk-party.is-leaving .kiosk-confetti {
+  opacity: 0;
+  transform: translate3d(var(--drift, 0px), 28vh, 0) scale(0.6);
+}
+
+.kiosk-party.is-leaving .kiosk-balloon {
+  opacity: 0;
+  transform: translateY(-30vh) scale(calc(var(--balloon-scale, 1) * 0.7));
+}
+
+.kiosk-party.is-leaving .kiosk-firework {
+  opacity: 0;
+  transform: scale(0.4);
 }
 
 .kiosk-confetti {
@@ -420,6 +451,14 @@
   animation: kiosk-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.kiosk-result.is-leaving {
+  animation: kiosk-exit 0.52s cubic-bezier(0.4, 0, 0.7, 0.2) forwards;
+}
+
+.kiosk-result.is-leaving .kiosk-birthday {
+  animation: kiosk-birthday-exit 0.45s ease-in forwards;
+}
+
 .kiosk-result.error-panel {
   gap: 0.65rem;
 }
@@ -688,6 +727,37 @@
   }
 }
 
+@keyframes kiosk-exit {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(18px) scale(0.94);
+  }
+}
+
+@keyframes kiosk-party-exit {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes kiosk-birthday-exit {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.85);
+  }
+}
+
 @keyframes kiosk-photo-pop {
   from {
     opacity: 0;
@@ -876,6 +946,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .kiosk-result,
+  .kiosk-result.is-leaving,
   .kiosk-event-photo img,
   .kiosk-pulse,
   .kiosk-idle-icon,
@@ -888,7 +959,8 @@
   .kiosk-confetti,
   .kiosk-balloon,
   .kiosk-firework,
-  .kiosk-firework-spark {
+  .kiosk-firework-spark,
+  .kiosk-party.is-leaving {
     animation: none;
   }
 

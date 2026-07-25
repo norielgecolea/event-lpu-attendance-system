@@ -7,8 +7,8 @@
 >
   <div class="kiosk-glow" aria-hidden="true"></div>
 
-  @if (lastTap()?.birthday) {
-    <div class="kiosk-party" aria-hidden="true">
+  @if (lastTap()?.birthday || (leaving() && confetti().length > 0)) {
+    <div class="kiosk-party" [class.is-leaving]="leaving()" aria-hidden="true">
       @for (c of confetti(); track $index) {
         <span
           class="kiosk-confetti"
@@ -154,7 +154,11 @@
           </div>
         } @else if (tapError(); as errMsg) {
           @for (_ of [animKey()]; track _) {
-            <div class="kiosk-result error-panel" role="alert">
+            <div
+              class="kiosk-result error-panel"
+              [class.is-leaving]="leaving()"
+              role="alert"
+            >
               <div class="kiosk-error-orb" aria-hidden="true">
                 <ng-icon name="lucideCircleAlert" class="kiosk-error-icon" />
               </div>
@@ -172,6 +176,7 @@
               [class.result-in]="tap.lastAction === 'TIME_IN'"
               [class.result-out]="tap.lastAction === 'TIME_OUT'"
               [class.result-bday]="!!tap.birthday"
+              [class.is-leaving]="leaving()"
             >
               @if (tap.birthday) {
                 <p class="kiosk-birthday">Happy Birthday!</p>

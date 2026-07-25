@@ -107,6 +107,8 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
   protected readonly confetti = signal<ConfettiPiece[]>([]);
   protected readonly balloons = signal<BalloonPiece[]>([]);
   protected readonly fireworks = signal<FireworkBurst[]>([]);
+  /** True while result / party play their exit animation before clearing. */
+  protected readonly leaving = signal(false);
   protected readonly eventPhoto = eventPhotoUrl;
   protected readonly personPhoto = studentPhotoUrl;
 
@@ -114,9 +116,13 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
   private tickTimer?: ReturnType<typeof setInterval>;
   private focusTimer?: ReturnType<typeof setInterval>;
   private clearTimer?: ReturnType<typeof setTimeout>;
+  private exitTimer?: ReturnType<typeof setTimeout>;
   private lastScanId: string | null = null;
   private lastScanAt = 0;
   private inFlight = 0;
+
+  private static readonly RESULT_HOLD_MS = 4200;
+  private static readonly EXIT_MS = 520;
 
   protected readonly windowStatus = computed<WindowStatus>(() => {
     const event = this.event();
@@ -200,6 +206,7 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
     clearInterval(this.tickTimer);
     clearInterval(this.focusTimer);
     clearTimeout(this.clearTimer);
+    clearTimeout(this.exitTimer);
     this.clearParty();
     this.notifications.disconnectEventKiosk();
   }
@@ -229,6 +236,7 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
     this.api.publicTap(event.id, identifier).subscribe({
       next: (log) => {
         this.inFlight = Math.max(0, this.inFlight - 1);
+        this.cancelExit();
         this.lastTap.set(log);
         this.errorNotFound.set(false);
         this.flash.set(
@@ -249,6 +257,7 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
       },
       error: (err: { error?: { message?: string }; status?: number }) => {
         this.inFlight = Math.max(0, this.inFlight - 1);
+        this.cancelExit();
         this.lastTap.set(null);
         this.clearParty();
         this.flash.set('error');
@@ -333,16 +342,34 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
 
   private scheduleClear(): void {
     clearTimeout(this.clearTimer);
+    clearTimeout(this.exitTimer);
     this.clearTimer = setTimeout(() => {
       if (this.inFlight > 0) {
         return;
       }
+      this.beginExit();
+    }, EventCheckIn.RESULT_HOLD_MS);
+  }
+
+  private beginExit(): void {
+    if (this.leaving()) {
+      return;
+    }
+    this.leaving.set(true);
+    this.flash.set('idle');
+    clearTimeout(this.exitTimer);
+    this.exitTimer = setTimeout(() => {
       this.lastTap.set(null);
       this.tapError.set(null);
       this.errorNotFound.set(false);
-      this.flash.set('idle');
       this.clearParty();
-    }, 4200);
+      this.leaving.set(false);
+    }, EventCheckIn.EXIT_MS);
+  }
+
+  private cancelExit(): void {
+    clearTimeout(this.exitTimer);
+    this.leaving.set(false);
   }
 
   private focusInput(): void {
