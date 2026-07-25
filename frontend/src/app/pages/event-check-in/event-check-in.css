@@ -57,9 +57,90 @@
   filter: blur(20px);
 }
 
+.kiosk-party {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  overflow: hidden;
+}
+
+.kiosk-confetti {
+  position: absolute;
+  top: -16px;
+  border-radius: 2px;
+  opacity: 0;
+  animation-name: kiosk-confetti-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+.kiosk-balloon {
+  position: absolute;
+  bottom: -140px;
+  width: 52px;
+  height: 66px;
+  background: var(--balloon-color, #ef4444);
+  border-radius: 50% 50% 50% 50% / 44% 44% 56% 56%;
+  transform: scale(var(--balloon-scale, 1));
+  animation-name: kiosk-balloon-rise;
+  animation-timing-function: ease-in;
+  animation-iteration-count: infinite;
+  will-change: transform;
+  opacity: 0;
+}
+
+.kiosk-balloon::before {
+  content: '';
+  position: absolute;
+  bottom: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 8px solid var(--balloon-color, #ef4444);
+}
+
+.kiosk-balloon::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 1.5px;
+  height: 70px;
+  background: rgba(15, 23, 42, 0.25);
+}
+
+.kiosk-firework {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--fw-color, #f59e0b);
+  box-shadow: 0 0 12px var(--fw-color, #f59e0b);
+  opacity: 0;
+  animation: kiosk-firework-burst 1.8s ease-out infinite;
+}
+
+.kiosk-firework-spark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+  opacity: 0;
+  animation-name: kiosk-firework-spark;
+  animation-duration: 1.8s;
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+  animation-delay: inherit;
+}
+
 .kiosk-top {
   position: relative;
-  z-index: 2;
+  z-index: 6;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
@@ -148,7 +229,7 @@
 
 .kiosk-layout {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   display: grid;
   grid-template-columns: minmax(280px, 0.95fr) minmax(320px, 1.15fr);
   gap: 1.25rem;
@@ -265,6 +346,8 @@
 }
 
 .kiosk-stage {
+  position: relative;
+  z-index: 3;
   display: grid;
   place-items: center;
   min-height: 28rem;
@@ -330,7 +413,7 @@
   grid-template-columns: 1fr;
   justify-items: center;
   align-content: center;
-  gap: 1.35rem;
+  gap: 1.1rem;
   width: min(100%, 36rem);
   padding: 0.35rem 0.5rem 0.75rem;
   text-align: center;
@@ -470,12 +553,25 @@
 }
 
 .kiosk-birthday {
-  margin: 0 0 0.45rem;
-  font-size: 1.05rem;
-  font-weight: 800;
+  order: -1;
+  margin: 0;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.55rem 1.35rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ef4444, #f59e0b, #ec4899, #8b5cf6);
+  background-size: 200% 100%;
+  color: #fff;
+  font-size: clamp(1.2rem, 3vw, 1.85rem);
+  font-weight: 850;
   letter-spacing: 0.02em;
-  color: #db2777;
-  animation: kiosk-birthday-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.12s both;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 12px 28px rgba(236, 72, 153, 0.4),
+    0 0 0 3px rgba(255, 255, 255, 0.35);
+  animation:
+    kiosk-birthday-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.08s both,
+    kiosk-birthday-shimmer 2.8s linear infinite 0.6s;
 }
 
 .kiosk-type {
@@ -617,11 +713,83 @@
 @keyframes kiosk-birthday-pop {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.92);
+    transform: translateY(-10px) scale(0.72);
   }
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+@keyframes kiosk-birthday-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+@keyframes kiosk-confetti-fall {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.35;
+    transform: translate3d(var(--drift, 0px), 105vh, 0) rotate(var(--spin, 720deg));
+  }
+}
+
+@keyframes kiosk-balloon-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(var(--balloon-scale, 1));
+  }
+  8% {
+    opacity: 0.95;
+  }
+  50% {
+    transform: translateY(-58vh) translateX(14px) scale(var(--balloon-scale, 1));
+  }
+  100% {
+    opacity: 0.85;
+    transform: translateY(-118vh) translateX(-10px) scale(var(--balloon-scale, 1));
+  }
+}
+
+@keyframes kiosk-firework-burst {
+  0%,
+  8% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  18% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+
+@keyframes kiosk-firework-spark {
+  0%,
+  12% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--angle, 0deg)) translateY(0) scale(0.4);
+  }
+  28% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--angle, 0deg)) translateY(calc(var(--dist, 48px) * -1))
+      scale(0.2);
   }
 }
 
@@ -716,7 +884,15 @@
   .kiosk-person-copy,
   .kiosk-action-badge,
   .kiosk-birthday,
-  .kiosk-error-orb {
+  .kiosk-error-orb,
+  .kiosk-confetti,
+  .kiosk-balloon,
+  .kiosk-firework,
+  .kiosk-firework-spark {
     animation: none;
+  }
+
+  .kiosk-party {
+    display: none;
   }
 }

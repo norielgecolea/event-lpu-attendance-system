@@ -7,6 +7,54 @@
 >
   <div class="kiosk-glow" aria-hidden="true"></div>
 
+  @if (lastTap()?.birthday) {
+    <div class="kiosk-party" aria-hidden="true">
+      @for (c of confetti(); track $index) {
+        <span
+          class="kiosk-confetti"
+          [style.left]="c.left"
+          [style.background]="c.color"
+          [style.width]="c.size"
+          [style.height]="c.size"
+          [style.animation-delay]="c.delay"
+          [style.animation-duration]="c.duration"
+          [style.--drift]="c.drift"
+          [style.--spin]="c.spin"
+        ></span>
+      }
+      @for (b of balloons(); track $index) {
+        <span
+          class="kiosk-balloon"
+          [style.left]="b.left"
+          [style.animation-delay]="b.delay"
+          [style.animation-duration]="b.duration"
+          [style.--balloon-color]="b.color"
+          [style.--balloon-scale]="b.scale"
+        ></span>
+      }
+      @for (fw of fireworks(); track $index) {
+        <span
+          class="kiosk-firework"
+          [style.left]="fw.left"
+          [style.bottom]="fw.bottom"
+          [style.animation-delay]="fw.delay"
+          [style.--fw-color]="fw.color"
+        >
+          @for (spark of fw.sparks; track $index) {
+            <i
+              class="kiosk-firework-spark"
+              [style.--angle]="spark.angle + 'deg'"
+              [style.--dist]="spark.distance"
+              [style.width]="spark.size"
+              [style.height]="spark.size"
+              [style.background]="fw.color"
+            ></i>
+          }
+        </span>
+      }
+    </div>
+  }
+
   <header class="kiosk-top">
     <a hlmBtn variant="outline" size="sm" class="kiosk-back" routerLink="/today">
       <ng-icon name="lucideArrowLeft" />
@@ -125,6 +173,10 @@
               [class.result-out]="tap.lastAction === 'TIME_OUT'"
               [class.result-bday]="!!tap.birthday"
             >
+              @if (tap.birthday) {
+                <p class="kiosk-birthday">Happy Birthday!</p>
+              }
+
               <div class="kiosk-person-hero">
                 <div class="kiosk-person-ring" aria-hidden="true"></div>
                 <div class="kiosk-person-photo">
@@ -146,9 +198,6 @@
               </div>
 
               <div class="kiosk-person-copy">
-                @if (tap.birthday) {
-                  <p class="kiosk-birthday">Happy Birthday!</p>
-                }
                 <span class="kiosk-type">
                   {{ tap.personType === 'EMPLOYEE' ? 'Employee' : 'Student' }}
                 </span>

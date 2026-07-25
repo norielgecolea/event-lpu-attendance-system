@@ -39,6 +39,32 @@ import { EventTonesApiService } from '../../core/settings/event-tones-api.servic
 type WindowStatus = 'loading' | 'not_started' | 'open' | 'ended' | 'missing';
 type Flash = 'idle' | 'in' | 'out' | 'error' | 'birthday';
 
+interface ConfettiPiece {
+  left: string;
+  color: string;
+  delay: string;
+  duration: string;
+  size: string;
+  drift: string;
+  spin: string;
+}
+
+interface BalloonPiece {
+  left: string;
+  color: string;
+  delay: string;
+  duration: string;
+  scale: number;
+}
+
+interface FireworkBurst {
+  left: string;
+  bottom: string;
+  delay: string;
+  color: string;
+  sparks: { angle: number; distance: string; size: string }[];
+}
+
 @Component({
   selector: 'app-event-check-in',
   imports: [DatePipe, FormsModule, RouterLink, NgIcon, HlmButton],
@@ -78,6 +104,9 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
   protected readonly animKey = signal(0);
   protected readonly clock = signal(new Date());
   protected readonly nowTick = signal(Date.now());
+  protected readonly confetti = signal<ConfettiPiece[]>([]);
+  protected readonly balloons = signal<BalloonPiece[]>([]);
+  protected readonly fireworks = signal<FireworkBurst[]>([]);
   protected readonly eventPhoto = eventPhotoUrl;
   protected readonly personPhoto = studentPhotoUrl;
 
@@ -171,6 +200,7 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
     clearInterval(this.tickTimer);
     clearInterval(this.focusTimer);
     clearTimeout(this.clearTimer);
+    this.clearParty();
     this.notifications.disconnectEventKiosk();
   }
 
@@ -205,6 +235,11 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
           log.birthday ? 'birthday' : log.lastAction === 'TIME_OUT' ? 'out' : 'in',
         );
         this.animKey.update((k) => k + 1);
+        if (log.birthday) {
+          this.launchParty();
+        } else {
+          this.clearParty();
+        }
         // Double-tap / cooldown: show last transaction without replaying tones.
         if (!log.duplicate) {
           this.playTapSound(log);
@@ -215,6 +250,7 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
       error: (err: { error?: { message?: string }; status?: number }) => {
         this.inFlight = Math.max(0, this.inFlight - 1);
         this.lastTap.set(null);
+        this.clearParty();
         this.flash.set('error');
         this.animKey.update((k) => k + 1);
         const notFound = err?.status === 404;
@@ -229,6 +265,53 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
         this.focusInput();
       },
     });
+  }
+
+  private launchParty(): void {
+    const colors = ['#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#eab308', '#14b8a6'];
+    const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]!;
+
+    this.confetti.set(
+      Array.from({ length: 96 }, () => ({
+        left: `${Math.random() * 100}%`,
+        color: pick(colors),
+        delay: `${Math.random() * 2.2}s`,
+        duration: `${2.6 + Math.random() * 2.4}s`,
+        size: `${6 + Math.random() * 8}px`,
+        drift: `${(Math.random() - 0.5) * 200}px`,
+        spin: `${540 + Math.random() * 720}deg`,
+      })),
+    );
+
+    this.balloons.set(
+      Array.from({ length: 12 }, (_, i) => ({
+        left: `${3 + i * 8 + Math.random() * 4}%`,
+        color: pick(colors),
+        delay: `${Math.random() * 1.8}s`,
+        duration: `${4.2 + Math.random() * 3.2}s`,
+        scale: 0.72 + Math.random() * 0.55,
+      })),
+    );
+
+    this.fireworks.set(
+      Array.from({ length: 5 }, (_, i) => ({
+        left: `${12 + i * 18 + Math.random() * 6}%`,
+        bottom: `${18 + Math.random() * 28}%`,
+        delay: `${i * 0.35 + Math.random() * 0.4}s`,
+        color: pick(colors),
+        sparks: Array.from({ length: 14 }, (__, s) => ({
+          angle: (360 / 14) * s + Math.random() * 12,
+          distance: `${42 + Math.random() * 38}px`,
+          size: `${3 + Math.random() * 4}px`,
+        })),
+      })),
+    );
+  }
+
+  private clearParty(): void {
+    this.confetti.set([]);
+    this.balloons.set([]);
+    this.fireworks.set([]);
   }
 
   private playTapSound(log: EventAttendanceLog): void {
@@ -258,7 +341,8 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
       this.tapError.set(null);
       this.errorNotFound.set(false);
       this.flash.set('idle');
-    }, 2800);
+      this.clearParty();
+    }, 4200);
   }
 
   private focusInput(): void {
