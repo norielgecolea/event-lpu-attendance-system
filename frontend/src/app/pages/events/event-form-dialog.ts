@@ -15,6 +15,7 @@ import {
   type EventPayload,
   type EventRecord,
 } from '../../core/events/events-api.service';
+import { compressImageForUpload } from '../../core/images/compress-image';
 
 export interface EventFormContext {
   mode: 'create' | 'edit';
@@ -41,6 +42,7 @@ export class EventFormDialog {
 
   protected readonly mode = this.context.mode;
   protected readonly error = signal<string | null>(null);
+  protected readonly compressing = signal(false);
   protected readonly previewUrl = signal<string | null>(
     eventPhotoUrl(this.context.event?.photo),
   );
@@ -70,7 +72,7 @@ export class EventFormDialog {
     this.dialogRef.close(null);
   }
 
-  protected onPhotoSelected(event: Event): void {
+  protected async onPhotoSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] ?? null;
     if (!file) {
@@ -81,11 +83,22 @@ export class EventFormDialog {
       input.value = '';
       return;
     }
+
     this.error.set(null);
-    this.photoFile = file;
-    const reader = new FileReader();
-    reader.onload = () => this.previewUrl.set(String(reader.result));
-    reader.readAsDataURL(file);
+    this.compressing.set(true);
+    try {
+      const compressed = await compressImageForUpload(file);
+      this.photoFile = compressed;
+      const reader = new FileReader();
+      reader.onload = () => this.previewUrl.set(String(reader.result));
+      reader.readAsDataURL(compressed);
+    } catch {
+      this.error.set('Could not process the selected image.');
+      input.value = '';
+      this.photoFile = null;
+    } finally {
+      this.compressing.set(false);
+    }
   }
 
   protected clearPhoto(): void {
@@ -95,6 +108,10 @@ export class EventFormDialog {
 
   protected submit(): void {
     this.error.set(null);
+    if (this.compressing()) {
+      this.error.set('Please wait for the picture to finish compressing.');
+      return;
+    }
     if (!this.title.trim()) {
       this.error.set('Title is required.');
       return;

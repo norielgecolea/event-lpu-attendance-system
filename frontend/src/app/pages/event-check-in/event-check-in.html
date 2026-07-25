@@ -69,6 +69,9 @@
               <span class="kiosk-pill ended">Ended</span>
             }
             <h2>{{ event.title }}</h2>
+            @if (event.description) {
+              <p class="kiosk-event-desc">{{ event.description }}</p>
+            }
             @if (event.location) {
               <p>
                 <ng-icon name="lucideMapPin" />
