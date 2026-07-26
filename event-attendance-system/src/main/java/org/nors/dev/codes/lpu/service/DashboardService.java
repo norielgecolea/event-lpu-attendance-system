@@ -60,7 +60,7 @@ public class DashboardService {
         return new DashboardSummaryResponse(
                 eventRepository.countAll(),
                 eventRepository.countActive(),
-                eventRepository.countActiveStartingBetween(dayStart, dayEnd),
+                eventRepository.countActiveOverlapping(dayStart, dayEnd),
                 eventRepository.countUpcomingActive(now),
                 totalStudents,
                 totalEmployees,

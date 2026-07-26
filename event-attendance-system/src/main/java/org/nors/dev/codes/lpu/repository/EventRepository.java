@@ -73,6 +73,40 @@ public class EventRepository {
                 .getResultList();
     }
 
+    /**
+     * Active events whose time span overlaps {@code [fromInclusive, toExclusive)}.
+     * Includes multi-day events that started earlier and are still ongoing.
+     */
+    @Transactional(readOnly = true)
+    public List<Event> findActiveOverlapping(Instant fromInclusive, Instant toExclusive) {
+        return currentSession()
+                .createQuery(
+                        "FROM Event e WHERE e.active = true "
+                                + "AND e.startsAt < :toExclusive "
+                                + "AND (e.endsAt IS NULL OR e.endsAt >= :fromInclusive) "
+                                + "ORDER BY e.startsAt ASC, e.id ASC",
+                        Event.class
+                )
+                .setParameter("fromInclusive", fromInclusive)
+                .setParameter("toExclusive", toExclusive)
+                .getResultList();
+    }
+
+    @Transactional(readOnly = true)
+    public long countActiveOverlapping(Instant fromInclusive, Instant toExclusive) {
+        Long count = currentSession()
+                .createQuery(
+                        "SELECT COUNT(e.id) FROM Event e WHERE e.active = true "
+                                + "AND e.startsAt < :toExclusive "
+                                + "AND (e.endsAt IS NULL OR e.endsAt >= :fromInclusive)",
+                        Long.class
+                )
+                .setParameter("fromInclusive", fromInclusive)
+                .setParameter("toExclusive", toExclusive)
+                .uniqueResult();
+        return count != null ? count : 0;
+    }
+
     @Transactional(readOnly = true)
     public Optional<Event> findById(Long id) {
         return Optional.ofNullable(currentSession().find(Event.class, id));

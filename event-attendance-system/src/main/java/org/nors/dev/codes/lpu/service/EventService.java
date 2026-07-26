@@ -55,13 +55,16 @@ public class EventService {
                 .toList();
     }
 
-    /** Active events whose start time falls on today's calendar date (Asia/Manila). */
+    /**
+     * Active events whose schedule spans the current Asia/Manila calendar day
+     * (started earlier and still ongoing, or starting today).
+     */
     @Transactional(readOnly = true)
     public List<EventResponse> listToday() {
         LocalDate today = LocalDate.now(APP_ZONE);
         Instant dayStart = today.atStartOfDay(APP_ZONE).toInstant();
         Instant dayEnd = today.plusDays(1).atStartOfDay(APP_ZONE).toInstant();
-        return eventRepository.findActiveStartingBetween(dayStart, dayEnd).stream()
+        return eventRepository.findActiveOverlapping(dayStart, dayEnd).stream()
                 .map(EventResponse::from)
                 .toList();
     }

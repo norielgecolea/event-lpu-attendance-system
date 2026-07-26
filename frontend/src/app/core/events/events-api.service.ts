@@ -104,7 +104,7 @@ export class EventsApiService {
     return this.http.get<EventRecord[]>(this.eventsUrl, { params });
   }
 
-  /** Public endpoint — active events starting today (Asia/Manila). */
+  /** Public endpoint — active events spanning today (Asia/Manila). */
   listToday(): Observable<EventRecord[]> {
     return this.http.get<EventRecord[]>(`${this.eventsUrl}/today`);
   }

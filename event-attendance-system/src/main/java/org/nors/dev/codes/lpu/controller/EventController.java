@@ -48,7 +48,7 @@ public class EventController {
         return ResponseEntity.ok(eventService.list(activeOnly, year, month));
     }
 
-    /** Public: active events starting today (Asia/Manila). */
+    /** Public: active events whose schedule spans today (Asia/Manila). */
     @GetMapping("/today")
     public ResponseEntity<List<EventResponse>> today() {
         return ResponseEntity.ok(eventService.listToday());
