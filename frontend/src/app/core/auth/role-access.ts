@@ -35,7 +35,8 @@ export function canAccessAdminRoute(role: string | null | undefined, route: stri
   if (role === 'OSAS') {
     return (
       route.startsWith('/events') ||
-      route.startsWith('/students')
+      route.startsWith('/students') ||
+      route === '/tap-errors'
     );
   }
 
@@ -45,7 +46,8 @@ export function canAccessAdminRoute(role: string | null | undefined, route: stri
       route.startsWith('/students') ||
       route.startsWith('/employees') ||
       route === '/users' ||
-      route === '/settings/event-tones'
+      route === '/settings/event-tones' ||
+      route === '/tap-errors'
     );
   }
 

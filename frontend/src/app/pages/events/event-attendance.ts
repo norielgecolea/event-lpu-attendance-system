@@ -86,6 +86,7 @@ export class EventAttendance {
     hidesAttendanceIdentifiers(this.auth.user()?.role),
   );
   private readonly searchChanges = new Subject<string>();
+  private readonly statsRefresh$ = new Subject<string>();
   private liveFlashTimer?: ReturnType<typeof setTimeout>;
 
   protected readonly title = computed(
@@ -151,7 +152,7 @@ export class EventAttendance {
       if (id) {
         this.loadEvent(id);
         this.loadLogs(id);
-        this.loadStats(id);
+        this.loadStats(id, true);
       }
     });
 
@@ -160,6 +161,10 @@ export class EventAttendance {
       .subscribe(() => {
         /* Client-side filter via filteredLogs. */
       });
+
+    this.statsRefresh$
+      .pipe(debounceTime(250), takeUntilDestroyed())
+      .subscribe((eventId) => this.loadStats(eventId, false));
 
     this.notifications.events$
       .pipe(
@@ -232,7 +237,8 @@ export class EventAttendance {
     if (added) {
       this.total.update((n) => n + 1);
     }
-    this.loadStats(this.eventId());
+    // Quiet stats refresh — do not flip statsLoading (that tears down cards/charts).
+    this.statsRefresh$.next(this.eventId());
     this.liveFlash.set(true);
     clearTimeout(this.liveFlashTimer);
     this.liveFlashTimer = setTimeout(() => this.liveFlash.set(false), 1200);
@@ -271,14 +277,23 @@ export class EventAttendance {
     });
   }
 
-  private loadStats(eventId: string): void {
-    this.statsLoading.set(true);
+  private loadStats(eventId: string, showLoading = true): void {
+    if (!eventId) {
+      return;
+    }
+    if (showLoading) {
+      this.statsLoading.set(true);
+    }
     this.api
       .attendanceStats(eventId)
       .pipe(catchError(() => of(null)))
       .subscribe((stats) => {
-        this.stats.set(stats);
-        this.statsLoading.set(false);
+        if (stats) {
+          this.stats.set(stats);
+        }
+        if (showLoading) {
+          this.statsLoading.set(false);
+        }
       });
   }
 }

@@ -9,6 +9,7 @@ import org.nors.dev.codes.lpu.model.Event;
 import org.nors.dev.codes.lpu.model.EventAttendanceLog;
 import org.nors.dev.codes.lpu.model.EventTone;
 import org.nors.dev.codes.lpu.model.Student;
+import org.nors.dev.codes.lpu.model.TapErrorLog;
 import org.nors.dev.codes.lpu.model.User;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,7 +39,12 @@ public class HibernateConfig {
         LocalSessionFactoryBean factoryBean = new LocalSessionFactoryBean();
         factoryBean.setDataSource(dataSource);
         factoryBean.setAnnotatedClasses(
-                User.class, Event.class, EventAttendanceLog.class, AppSetting.class, EventTone.class
+                User.class,
+                Event.class,
+                EventAttendanceLog.class,
+                AppSetting.class,
+                EventTone.class,
+                TapErrorLog.class
         );
         factoryBean.setHibernateProperties(hibernateProperties(ddlAuto));
         return factoryBean;

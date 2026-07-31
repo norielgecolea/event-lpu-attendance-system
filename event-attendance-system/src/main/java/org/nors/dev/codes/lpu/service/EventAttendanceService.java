@@ -15,6 +15,9 @@ import org.apache.logging.log4j.Logger;
 import org.nors.dev.codes.lpu.dto.EventAttendanceLogResponse;
 import org.nors.dev.codes.lpu.dto.EventAttendancePageResponse;
 import org.nors.dev.codes.lpu.dto.EventAttendanceStatsResponse;
+import org.nors.dev.codes.lpu.dto.EventAttendanceTapRequest;
+import org.nors.dev.codes.lpu.dto.EventKioskStatusResponse;
+import org.nors.dev.codes.lpu.dto.TapErrorLogResponse;
 import org.nors.dev.codes.lpu.model.Employee;
 import org.nors.dev.codes.lpu.model.Event;
 import org.nors.dev.codes.lpu.model.EventAttendanceLog;
@@ -44,19 +47,22 @@ public class EventAttendanceService {
     private final StudentRepository studentRepository;
     private final EmployeeRepository employeeRepository;
     private final NotificationService notificationService;
+    private final TapErrorLogService tapErrorLogService;
 
     public EventAttendanceService(
             EventRepository eventRepository,
             EventAttendanceLogRepository attendanceLogRepository,
             StudentRepository studentRepository,
             EmployeeRepository employeeRepository,
-            NotificationService notificationService
+            NotificationService notificationService,
+            TapErrorLogService tapErrorLogService
     ) {
         this.eventRepository = eventRepository;
         this.attendanceLogRepository = attendanceLogRepository;
         this.studentRepository = studentRepository;
         this.employeeRepository = employeeRepository;
         this.notificationService = notificationService;
+        this.tapErrorLogService = tapErrorLogService;
     }
 
     @Transactional(readOnly = true)
@@ -214,6 +220,38 @@ public class EventAttendanceService {
         return escaped;
     }
 
+    @Transactional(readOnly = true)
+    public List<EventAttendanceLogResponse> recent(int limit, boolean hideIdentifiers) {
+        int size = Math.min(Math.max(limit, 1), 50);
+        List<EventAttendanceLog> logs = attendanceLogRepository.findRecent(size);
+        return logs.stream()
+                .map(logEntry -> {
+                    Event event = eventRepository.findById(logEntry.getEventId()).orElse(null);
+                    String photo = resolvePersonPhoto(logEntry);
+                    EventAttendanceLogResponse response = EventAttendanceLogResponse.from(logEntry, photo)
+                            .withEvent(
+                                    event != null ? event.getTitle() : null,
+                                    event != null ? event.getLocation() : null
+                            );
+                    return hideIdentifiers ? response.withoutIdentifiers() : response;
+                })
+                .toList();
+    }
+
+    private String resolvePersonPhoto(EventAttendanceLog logEntry) {
+        if (TYPE_STUDENT.equals(logEntry.getPersonType()) && logEntry.getStudentId() != null) {
+            return studentRepository.findById(logEntry.getStudentId())
+                    .map(Student::getPhoto)
+                    .orElse(null);
+        }
+        if (TYPE_EMPLOYEE.equals(logEntry.getPersonType()) && logEntry.getEmployeeId() != null) {
+            return employeeRepository.findById(logEntry.getEmployeeId())
+                    .map(Employee::getPhoto)
+                    .orElse(null);
+        }
+        return null;
+    }
+
     /**
      * Toggle TIME_IN / TIME_OUT for a student or employee at an event.
      * Identifier may be RFID, student number, or employee number (looked up on the gate DB).
@@ -245,6 +283,7 @@ public class EventAttendanceService {
                 ? employeeRepository.findByRfidOrEmployeeNo(identifier).orElse(null)
                 : null;
         if (student == null && employee == null) {
+            broadcastTapError(identifier, event);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No student or employee matched that RFID/ID");
         }
 
@@ -257,11 +296,14 @@ public class EventAttendanceService {
                     .orElse(null);
             if (isWithinCooldown(existing, now)) {
                 log.info("TAP cooldown eventId={} studentNo={}", eventId, student.getStudentNo());
-                return EventAttendanceLogResponse.from(
-                        existing,
-                        student.getPhoto(),
-                        student.getBirthdate(),
-                        true
+                return enrichWithEvent(
+                        EventAttendanceLogResponse.from(
+                                existing,
+                                student.getPhoto(),
+                                student.getBirthdate(),
+                                true
+                        ),
+                        event
                 );
             }
             result = applyTap(
@@ -277,10 +319,13 @@ public class EventAttendanceService {
                     tappedByUserId
             );
             log.info("{} eventId={} studentNo={}", result.getLastAction(), eventId, student.getStudentNo());
-            EventAttendanceLogResponse response = EventAttendanceLogResponse.from(
-                    result,
-                    student.getPhoto(),
-                    student.getBirthdate()
+            EventAttendanceLogResponse response = enrichWithEvent(
+                    EventAttendanceLogResponse.from(
+                            result,
+                            student.getPhoto(),
+                            student.getBirthdate()
+                    ),
+                    event
             );
             notificationService.broadcastAttendanceTap(response);
             return response;
@@ -291,11 +336,14 @@ public class EventAttendanceService {
                 .orElse(null);
         if (isWithinCooldown(existing, now)) {
             log.info("TAP cooldown eventId={} employeeNo={}", eventId, employee.getEmployeeNo());
-            return EventAttendanceLogResponse.from(
-                    existing,
-                    employee.getPhoto(),
-                    employee.getBirthdate(),
-                    true
+            return enrichWithEvent(
+                    EventAttendanceLogResponse.from(
+                            existing,
+                            employee.getPhoto(),
+                            employee.getBirthdate(),
+                            true
+                    ),
+                    event
             );
         }
         result = applyTap(
@@ -311,13 +359,33 @@ public class EventAttendanceService {
                 tappedByUserId
         );
         log.info("{} eventId={} employeeNo={}", result.getLastAction(), eventId, employee.getEmployeeNo());
-        EventAttendanceLogResponse response = EventAttendanceLogResponse.from(
-                result,
-                employee.getPhoto(),
-                employee.getBirthdate()
+        EventAttendanceLogResponse response = enrichWithEvent(
+                EventAttendanceLogResponse.from(
+                        result,
+                        employee.getPhoto(),
+                        employee.getBirthdate()
+                ),
+                event
         );
         notificationService.broadcastAttendanceTap(response);
         return response;
+    }
+
+    private void broadcastTapError(String identifier, Event event) {
+        TapErrorLogResponse logged = tapErrorLogService.record(
+                identifier,
+                event.getId(),
+                event.getTitle(),
+                event.getLocation()
+        );
+        notificationService.broadcastAttendanceTapError(logged);
+    }
+
+    private static EventAttendanceLogResponse enrichWithEvent(
+            EventAttendanceLogResponse response,
+            Event event
+    ) {
+        return response.withEvent(event.getTitle(), event.getLocation());
     }
 
     private static boolean isWithinCooldown(EventAttendanceLog existing, Instant now) {

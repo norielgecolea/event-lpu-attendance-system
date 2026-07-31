@@ -97,6 +97,14 @@ public class NotificationService {
         ));
     }
 
+    public void broadcastAttendanceTapError(Object errorPayload) {
+        broadcast(AuthEventMessage.withPayload(
+                "EVENT_ATTENDANCE_TAP_ERROR",
+                "Unrecognized ID/RFID tapped",
+                errorPayload
+        ));
+    }
+
     /** Push updated event (times/active/etc.) to portal admins and open kiosks for that event. */
     public void broadcastEventUpdated(Long eventId, Object eventPayload) {
         AuthEventMessage message = AuthEventMessage.withPayload(

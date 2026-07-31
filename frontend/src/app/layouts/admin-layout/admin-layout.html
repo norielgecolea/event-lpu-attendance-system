@@ -1,4 +1,40 @@
 <div class="bg-muted/40 relative flex h-full overflow-hidden">
+  <!-- RFID error alerts -->
+  @if (tapErrors().length > 0) {
+    <div
+      class="pointer-events-none absolute top-16 right-3 z-50 flex w-96 max-w-[calc(100vw-1.5rem)] flex-col gap-2 sm:top-20 sm:right-6"
+    >
+      @for (alert of tapErrors(); track alert.id) {
+        <div
+          class="alert-card pointer-events-auto flex items-start gap-3 rounded-xl border border-red-200 bg-white p-3 shadow-2xl sm:p-4"
+          role="alert"
+        >
+          <div class="grid size-9 shrink-0 place-items-center rounded-lg bg-red-100 text-red-600 sm:size-10">
+            <ng-icon name="lucideTriangleAlert" class="text-lg sm:text-xl" />
+          </div>
+          <div class="min-w-0 flex-1 leading-tight">
+            <p class="text-sm font-bold text-red-700">RFID Reading Error</p>
+            <p class="mt-0.5 text-sm text-slate-700">
+              Unrecognized ID
+              <span class="font-semibold tabular-nums">{{ alert.identifier }}</span>
+            </p>
+            <p class="mt-0.5 text-xs text-slate-500">
+              {{ alert.eventTitle }} · {{ alert.location }} · {{ alert.time | date: 'h:mm:ss a' }}
+            </p>
+          </div>
+          <button
+            type="button"
+            class="grid size-7 shrink-0 place-items-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+            aria-label="Dismiss alert"
+            (click)="dismissTapError(alert.id)"
+          >
+            <ng-icon name="lucideX" class="text-sm" />
+          </button>
+        </div>
+      }
+    </div>
+  }
+
   <!-- Mobile nav backdrop -->
   @if (mobileNavOpen()) {
     <button

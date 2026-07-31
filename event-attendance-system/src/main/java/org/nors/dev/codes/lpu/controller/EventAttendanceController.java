@@ -62,6 +62,14 @@ public class EventAttendanceController {
         return ResponseEntity.ok(eventAttendanceService.statsByEvent(eventId));
     }
 
+    @GetMapping("/recent")
+    public ResponseEntity<List<EventAttendanceLogResponse>> recent(
+            @RequestParam(defaultValue = "5") int limit,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return ResponseEntity.ok(eventAttendanceService.recent(limit, hideIdentifiers(user)));
+    }
+
     @GetMapping(value = "/export", produces = "text/csv")
     public ResponseEntity<byte[]> export(
             @RequestParam Long eventId,

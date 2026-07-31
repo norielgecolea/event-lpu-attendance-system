@@ -10,11 +10,13 @@ import { Students } from './pages/students/students';
 import { Employees } from './pages/employees/employees';
 import { Users } from './pages/users/users';
 import { EventTonesSettings } from './pages/settings/event-tones-settings';
+import { TapErrorLogs } from './pages/tap-errors/tap-error-logs';
 import { adminPortalGuard, allowRoles, guestGuard } from './core/auth/auth.guards';
 
 const PORTAL_ROLES = ['SUPERADMIN', 'OSAS', 'EVENT_MAKER'] as const;
 const EVENT_ROLES = ['SUPERADMIN', 'OSAS', 'EVENT_MAKER'] as const;
 const STUDENT_ROLES = ['SUPERADMIN', 'OSAS'] as const;
+const TAP_ERROR_ROLES = ['SUPERADMIN', 'OSAS'] as const;
 const SUPERADMIN_ONLY = ['SUPERADMIN'] as const;
 
 export const routes: Routes = [
@@ -61,6 +63,11 @@ export const routes: Routes = [
         path: 'settings/event-tones',
         component: EventTonesSettings,
         canActivate: [allowRoles(...SUPERADMIN_ONLY)],
+      },
+      {
+        path: 'tap-errors',
+        component: TapErrorLogs,
+        canActivate: [allowRoles(...TAP_ERROR_ROLES)],
       },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ],

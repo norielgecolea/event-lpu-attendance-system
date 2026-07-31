@@ -89,3 +89,16 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_event_attendance_employee
 
 CREATE INDEX IF NOT EXISTS idx_event_attendance_event
     ON event_attendance_logs (event_id, updated_at DESC);
+
+-- Unrecognized RFID / ID taps at event kiosks
+CREATE TABLE IF NOT EXISTS tap_error_logs (
+    id              BIGSERIAL PRIMARY KEY,
+    identifier      VARCHAR(100) NOT NULL,
+    event_id        BIGINT,
+    event_title     VARCHAR(255),
+    location        VARCHAR(255),
+    tapped_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_tap_error_logs_tapped_at
+    ON tap_error_logs (tapped_at DESC, id DESC);

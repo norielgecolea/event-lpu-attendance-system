@@ -1,4 +1,5 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
+import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   NavigationEnd,
@@ -6,7 +7,7 @@ import {
   RouterLink,
   RouterOutlet,
 } from '@angular/router';
-import { filter } from 'rxjs';
+import { Subscription, filter } from 'rxjs';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideBriefcase,
@@ -18,6 +19,7 @@ import {
   lucidePanelLeft,
   lucideShieldCheck,
   lucideMusic2,
+  lucideTriangleAlert,
   lucideUserRound,
   lucideX,
 } from '@ng-icons/lucide';
@@ -28,8 +30,10 @@ import {
   HlmNavigationMenuLink,
   HlmNavigationMenuList,
 } from '@spartan-ng/helm/navigation-menu';
+import { AlertSoundService } from '../../core/alert-sound.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { canAccessAdminRoute } from '../../core/auth/role-access';
+import { NotificationService } from '../../core/notifications/notification.service';
 
 interface NavItem {
   label: string;
@@ -42,9 +46,25 @@ interface NavSection {
   items: NavItem[];
 }
 
+interface TapErrorPayload {
+  identifier?: string | null;
+  eventTitle?: string | null;
+  location?: string | null;
+  tappedAt?: string | null;
+}
+
+interface TapErrorAlert {
+  id: number;
+  identifier: string;
+  eventTitle: string;
+  location: string;
+  time: Date;
+}
+
 @Component({
   selector: 'app-admin-layout',
   imports: [
+    DatePipe,
     RouterOutlet,
     RouterLink,
     NgIcon,
@@ -62,6 +82,7 @@ interface NavSection {
       lucideBriefcase,
       lucideShieldCheck,
       lucideMusic2,
+      lucideTriangleAlert,
       lucidePanelLeft,
       lucideMenu,
       lucideUserRound,
@@ -72,6 +93,27 @@ interface NavSection {
   templateUrl: './admin-layout.html',
   host: { class: 'block h-full' },
   styles: `
+    @keyframes alert-in {
+      from {
+        opacity: 0;
+        transform: translateX(24px) scale(0.96);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    .alert-card {
+      animation: alert-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .alert-card {
+        animation: none;
+      }
+    }
+
     .admin-main {
       -webkit-overflow-scrolling: touch;
       scrollbar-gutter: stable;
@@ -92,10 +134,14 @@ interface NavSection {
     }
   `,
 })
-export class AdminLayout {
+export class AdminLayout implements OnDestroy {
   protected readonly sidebarOpen = signal(true);
   protected readonly mobileNavOpen = signal(false);
   protected readonly loggingOut = signal(false);
+  protected readonly tapErrors = signal<TapErrorAlert[]>([]);
+  private nextAlertId = 1;
+  private readonly alertTimers = new Set<ReturnType<typeof setTimeout>>();
+  private readonly tapErrorSub: Subscription;
 
   protected readonly navSections: NavSection[] = [
     {
@@ -118,6 +164,11 @@ export class AdminLayout {
       items: [
         { label: 'User Management', icon: 'lucideShieldCheck', route: '/users' },
         { label: 'Event Tones', icon: 'lucideMusic2', route: '/settings/event-tones' },
+        {
+          label: 'RFID Error Logs',
+          icon: 'lucideTriangleAlert',
+          route: '/tap-errors',
+        },
       ],
     },
   ];
@@ -134,6 +185,8 @@ export class AdminLayout {
 
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
+  private readonly alertSound = inject(AlertSoundService);
+  protected readonly notifications = inject(NotificationService);
 
   private readonly currentUrl = signal(this.router.url);
   protected readonly pageTitle = signal(this.resolveTitle());
@@ -150,6 +203,19 @@ export class AdminLayout {
         this.pageTitle.set(this.resolveTitle());
         this.mobileNavOpen.set(false);
       });
+
+    this.tapErrorSub = this.notifications.events$
+      .pipe(filter((e) => e.type === 'EVENT_ATTENDANCE_TAP_ERROR'))
+      .subscribe((event) => {
+        const payload = (event.payload ?? {}) as TapErrorPayload;
+        this.pushTapError(payload);
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.tapErrorSub.unsubscribe();
+    this.alertTimers.forEach((t) => clearTimeout(t));
+    this.alertTimers.clear();
   }
 
   /** Longest-prefix match so nested routes highlight the correct item. */
@@ -202,5 +268,26 @@ export class AdminLayout {
       next: () => this.loggingOut.set(false),
       error: () => this.loggingOut.set(false),
     });
+  }
+
+  protected dismissTapError(id: number): void {
+    this.tapErrors.update((list) => list.filter((a) => a.id !== id));
+  }
+
+  private pushTapError(payload: TapErrorPayload): void {
+    const alert: TapErrorAlert = {
+      id: this.nextAlertId++,
+      identifier: payload.identifier?.trim() || 'Unknown ID',
+      eventTitle: payload.eventTitle?.trim() || 'Unknown event',
+      location: payload.location?.trim() || 'No venue',
+      time: payload.tappedAt ? new Date(payload.tappedAt) : new Date(),
+    };
+    this.tapErrors.update((list) => [alert, ...list].slice(0, 4));
+    this.alertSound.playError();
+    const timer = setTimeout(() => {
+      this.dismissTapError(alert.id);
+      this.alertTimers.delete(timer);
+    }, 12_000);
+    this.alertTimers.add(timer);
   }
 }

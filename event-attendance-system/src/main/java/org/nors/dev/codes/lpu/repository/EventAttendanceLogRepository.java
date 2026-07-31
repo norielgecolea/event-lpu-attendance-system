@@ -141,6 +141,17 @@ public class EventAttendanceLogRepository {
                 .getResultList();
     }
 
+    @Transactional(readOnly = true)
+    public List<EventAttendanceLog> findRecent(int limit) {
+        return currentSession()
+                .createQuery(
+                        "FROM EventAttendanceLog l ORDER BY l.updatedAt DESC, l.id DESC",
+                        EventAttendanceLog.class
+                )
+                .setMaxResults(Math.min(Math.max(limit, 1), 50))
+                .getResultList();
+    }
+
     @Transactional
     public void persist(EventAttendanceLog log) {
         Session session = currentSession();

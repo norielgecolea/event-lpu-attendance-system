@@ -30,6 +30,8 @@ export interface EventPayload {
 export interface EventAttendanceLog {
   id: string;
   eventId: string;
+  eventTitle?: string | null;
+  eventLocation?: string | null;
   personType: 'STUDENT' | 'EMPLOYEE' | string;
   studentId: string | null;
   employeeId: string | null;
@@ -162,6 +164,11 @@ export class EventsApiService {
   attendanceStats(eventId: string): Observable<EventAttendanceStats> {
     const params = new HttpParams().set('eventId', eventId);
     return this.http.get<EventAttendanceStats>(`${this.attendanceUrl}/stats`, { params });
+  }
+
+  recentAttendance(limit = 5): Observable<EventAttendanceLog[]> {
+    const params = new HttpParams().set('limit', String(limit));
+    return this.http.get<EventAttendanceLog[]>(`${this.attendanceUrl}/recent`, { params });
   }
 
   exportAttendanceCsv(eventId: string): Observable<Blob> {
