@@ -92,7 +92,7 @@ services:
       # Writable so missing (gitignored) certs can be auto-generated on first start
       - ./data/web/certs:/etc/nginx/certs
     environment:
-      SERVER_NAME: ${SERVER_NAME:-localhost}
+      SERVER_NAME: ${SERVER_NAME:-_}
       UPSTREAM_HOST: angular
       UPSTREAM_PORT: 4200
       TOMCAT_HOST: tomcat

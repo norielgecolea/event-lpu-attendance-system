@@ -2,6 +2,8 @@ server:
   port: 8080
   servlet:
     context-path: /
+  # Honor X-Forwarded-* from nginx / Cloudflare so redirects and URLs stay correct
+  forward-headers-strategy: framework
 
 spring:
   application:
@@ -34,6 +36,9 @@ app:
     secret: ${APP_JWT_SECRET:bHB1LWV2ZW50LWF0dGVuZGFuY2Utand0LXNlY3JldC1rZXktMzJieXRlcyE=}
     expiration-ms: ${APP_JWT_EXPIRATION_MS:28800000}
     remember-expiration-ms: ${APP_JWT_REMEMBER_EXPIRATION_MS:315360000000}
+  cors:
+    # Comma-separated Spring origin patterns — localhost + both public DNS hosts
+    allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,http://127.0.0.1:*,https://localhost:*,https://127.0.0.1:*,https://eventattendance.lpulaguna.com,http://eventattendance.lpulaguna.com,https://*.lpulaguna.com,http://*.lpulaguna.com,https://eventattendance.lpu-laguna.edu.ph,http://eventattendance.lpu-laguna.edu.ph,https://*.lpu-laguna.edu.ph,http://*.lpu-laguna.edu.ph}
   # Gate attendance Postgres — students, employees, RFID (read-only)
   gate-attendance:
     db-host: ${GATE_ATTENDANCE_DB_HOST:127.0.0.1}

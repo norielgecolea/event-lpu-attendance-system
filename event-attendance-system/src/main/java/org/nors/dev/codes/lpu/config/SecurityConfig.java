@@ -3,6 +3,7 @@ package org.nors.dev.codes.lpu.config;
 import java.util.List;
 import org.nors.dev.codes.lpu.security.JwtAuthEntryPoint;
 import org.nors.dev.codes.lpu.security.JwtAuthFilter;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -23,14 +24,21 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@EnableConfigurationProperties(CorsProperties.class)
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final JwtAuthEntryPoint jwtAuthEntryPoint;
+    private final CorsProperties corsProperties;
 
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter, JwtAuthEntryPoint jwtAuthEntryPoint) {
+    public SecurityConfig(
+            JwtAuthFilter jwtAuthFilter,
+            JwtAuthEntryPoint jwtAuthEntryPoint,
+            CorsProperties corsProperties
+    ) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.jwtAuthEntryPoint = jwtAuthEntryPoint;
+        this.corsProperties = corsProperties;
     }
 
     @Bean
@@ -92,12 +100,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of(
-                "http://localhost:*",
-                "http://127.0.0.1:*",
-                "https://rfidattendance.lpulaguna.com",
-                "https://*.lpulaguna.com"
-        ));
+        // Origin has no path — trailing /* would reject browser CORS and return 403
+        List<String> patterns = corsProperties.resolvedPatterns();
+        if (patterns.isEmpty()) {
+            patterns = List.of("*");
+        }
+        configuration.setAllowedOriginPatterns(patterns);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
