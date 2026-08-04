@@ -61,7 +61,7 @@ import { NotificationService } from '../../core/notifications/notification.servi
     }),
   ],
   templateUrl: './event-attendance.html',
-  host: { class: 'block w-full' },
+  host: { class: 'flex min-h-0 flex-1 flex-col' },
 })
 export class EventAttendance {
   private readonly api = inject(EventsApiService);

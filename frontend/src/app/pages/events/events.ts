@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
+  lucideChevronLeft,
+  lucideChevronRight,
   lucideClipboardList,
   lucidePlus,
   lucidePower,
@@ -33,6 +35,8 @@ import { EventFormDialog } from './event-form-dialog';
       lucideClipboardList,
       lucideTrash2,
       lucidePower,
+      lucideChevronLeft,
+      lucideChevronRight,
     }),
   ],
   templateUrl: './events.html',
@@ -59,6 +63,9 @@ export class Events {
       this.auth.isSuperAdmin() || this.auth.isOsas() || this.auth.isEventMaker(),
   );
 
+  protected readonly monthLabel = computed(() => formatMonthLabel(this.month()));
+  protected readonly isCurrentMonth = computed(() => this.month() === currentMonthValue());
+
   protected readonly filtered = computed(() => {
     const term = this.search().trim().toLowerCase();
     if (!term) {
@@ -71,6 +78,17 @@ export class Events {
 
   constructor() {
     this.reload();
+  }
+
+  protected shiftMonth(delta: number): void {
+    const { year, month } = parseMonthValue(this.month());
+    const next = new Date(Date.UTC(year, month - 1 + delta, 1));
+    const value = `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, '0')}`;
+    this.onMonthChange(value);
+  }
+
+  protected goToCurrentMonth(): void {
+    this.onMonthChange(currentMonthValue());
   }
 
   protected onMonthChange(value: string): void {
@@ -222,6 +240,18 @@ function currentMonthValue(): string {
 function parseMonthValue(value: string): { year: number; month: number } {
   const [yearText, monthText] = value.split('-');
   return { year: Number(yearText), month: Number(monthText) };
+}
+
+function formatMonthLabel(value: string): string {
+  const { year, month } = parseMonthValue(value);
+  if (!year || !month) {
+    return value;
+  }
+  return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString('en-PH', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
 }
 
 function startsInMonth(startsAt: string, monthValue: string): boolean {

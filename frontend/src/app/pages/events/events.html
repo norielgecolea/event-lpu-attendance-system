@@ -1,17 +1,68 @@
 <div class="flex min-h-0 flex-1 flex-col gap-4">
   <!-- Toolbar -->
   <div class="flex flex-wrap items-center gap-2">
-    <label class="sr-only" for="events-month">Month</label>
-    <input
-      hlmInput
-      id="events-month"
-      class="bg-card w-[11.5rem] shrink-0"
-      type="month"
-      [ngModel]="month()"
-      (ngModelChange)="onMonthChange($event)"
-      title="Filter by start month"
-    />
-    <div class="relative min-w-0 flex-1">
+    <div
+      class="bg-card border-border flex items-center gap-0.5 rounded-xl border p-1 shadow-sm"
+      role="group"
+      aria-label="Filter by month"
+    >
+      <button
+        hlmBtn
+        size="icon"
+        variant="ghost"
+        class="size-9 shrink-0"
+        type="button"
+        aria-label="Previous month"
+        (click)="shiftMonth(-1)"
+      >
+        <ng-icon name="lucideChevronLeft" class="text-base" />
+      </button>
+
+      <div class="min-w-[10.5rem] text-center sm:min-w-[12rem]">
+        <div class="relative">
+          <p class="text-foreground pointer-events-none text-sm font-semibold tracking-tight">
+            {{ monthLabel() }}
+          </p>
+          <label class="sr-only" for="events-month">Choose month</label>
+          <input
+            id="events-month"
+            class="absolute inset-0 cursor-pointer opacity-0"
+            type="month"
+            [ngModel]="month()"
+            (ngModelChange)="onMonthChange($event)"
+            [attr.title]="'Choose month (' + monthLabel() + ')'"
+            [attr.aria-label]="'Choose month, currently ' + monthLabel()"
+          />
+        </div>
+        <p class="text-muted-foreground text-[10px] font-medium tracking-wide uppercase">
+          @if (isCurrentMonth()) {
+            This month
+          } @else {
+            <button
+              type="button"
+              class="hover:text-foreground underline-offset-2 hover:underline"
+              (click)="goToCurrentMonth()"
+            >
+              Jump to today
+            </button>
+          }
+        </p>
+      </div>
+
+      <button
+        hlmBtn
+        size="icon"
+        variant="ghost"
+        class="size-9 shrink-0"
+        type="button"
+        aria-label="Next month"
+        (click)="shiftMonth(1)"
+      >
+        <ng-icon name="lucideChevronRight" class="text-base" />
+      </button>
+    </div>
+
+    <div class="relative min-w-0 flex-1 basis-48">
       <ng-icon
         name="lucideSearch"
         class="text-muted-foreground pointer-events-none absolute inset-y-0 left-3 my-auto text-base"
@@ -74,9 +125,9 @@
                     />
                   } @else {
                     <div
-                      class="bg-muted text-muted-foreground flex h-12 w-16 shrink-0 items-center justify-center rounded text-[10px] font-medium"
+                      class="from-primary/15 to-primary/5 border-border flex h-12 w-16 shrink-0 items-center justify-center rounded border bg-gradient-to-br p-1.5"
                     >
-                      No photo
+                      <img src="/logo.svg" alt="" class="h-full w-full object-contain" />
                     </div>
                   }
                   <div class="min-w-0 leading-tight">
@@ -179,7 +230,7 @@
           } @empty {
             <tr hlmTr>
               <td hlmTd colspan="6" class="text-muted-foreground py-10 text-center">
-                No events for this month.
+                No events for {{ monthLabel() }}.
               </td>
             </tr>
           }

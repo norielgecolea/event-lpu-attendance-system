@@ -295,9 +295,18 @@
   display: grid;
   place-items: center;
   height: 100%;
-  background: linear-gradient(145deg, rgba(155, 28, 28, 0.18), rgba(155, 28, 28, 0.05));
-  color: rgba(155, 28, 28, 0.45);
-  font-size: 4rem;
+  padding: 2.5rem;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(155, 28, 28, 0.16), transparent 55%),
+    linear-gradient(145deg, #f8fafc 0%, #eef2f7 55%, #e8edf3 100%);
+}
+
+.kiosk-event-logo {
+  width: min(52%, 14rem);
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 24px rgba(15, 23, 42, 0.12));
+  animation: kiosk-photo-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .kiosk-event-shade {

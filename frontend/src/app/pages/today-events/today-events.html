@@ -54,8 +54,8 @@
             @if (photoUrl(event.photo); as src) {
               <img [src]="src" [alt]="event.title" class="h-44 w-full object-cover" />
             } @else {
-              <div class="from-primary/20 to-primary/5 flex h-44 items-center justify-center bg-gradient-to-br">
-                <ng-icon name="lucideCalendarDays" class="text-primary/50 text-4xl" />
+              <div class="from-primary/15 to-primary/5 flex h-44 items-center justify-center bg-gradient-to-br p-8">
+                <img src="/logo.svg" alt="LPU Laguna" class="h-full max-h-28 w-auto object-contain" />
               </div>
             }
             <div class="space-y-2 p-4">
