@@ -4,8 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
-  lucideChevronLeft,
-  lucideChevronRight,
   lucideClipboardList,
   lucidePlus,
   lucidePower,
@@ -22,11 +20,22 @@ import { filter, take } from 'rxjs';
 import { EventsApiService, eventPhotoUrl, type EventPayload, type EventRecord } from '../../core/events/events-api.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { canDeleteEvents, canEditEvents, canToggleEventActive } from '../../core/auth/role-access';
+import { MonthSelector } from '../../shared/ui/month-selector/month-selector';
 import { EventFormDialog } from './event-form-dialog';
 
 @Component({
   selector: 'app-events',
-  imports: [DatePipe, FormsModule, RouterLink, NgIcon, HlmButton, HlmInput, HlmBadge, HlmTableImports],
+  imports: [
+    DatePipe,
+    FormsModule,
+    RouterLink,
+    NgIcon,
+    HlmButton,
+    HlmInput,
+    HlmBadge,
+    HlmTableImports,
+    MonthSelector,
+  ],
   viewProviders: [
     provideIcons({
       lucidePlus,
@@ -35,8 +44,6 @@ import { EventFormDialog } from './event-form-dialog';
       lucideClipboardList,
       lucideTrash2,
       lucidePower,
-      lucideChevronLeft,
-      lucideChevronRight,
     }),
   ],
   templateUrl: './events.html',
@@ -64,7 +71,6 @@ export class Events {
   );
 
   protected readonly monthLabel = computed(() => formatMonthLabel(this.month()));
-  protected readonly isCurrentMonth = computed(() => this.month() === currentMonthValue());
 
   protected readonly filtered = computed(() => {
     const term = this.search().trim().toLowerCase();
@@ -80,19 +86,8 @@ export class Events {
     this.reload();
   }
 
-  protected shiftMonth(delta: number): void {
-    const { year, month } = parseMonthValue(this.month());
-    const next = new Date(Date.UTC(year, month - 1 + delta, 1));
-    const value = `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, '0')}`;
-    this.onMonthChange(value);
-  }
-
-  protected goToCurrentMonth(): void {
-    this.onMonthChange(currentMonthValue());
-  }
-
   protected onMonthChange(value: string): void {
-    if (!/^\d{4}-\d{2}$/.test(value)) {
+    if (!/^\d{4}-\d{2}$/.test(value) || value === this.month()) {
       return;
     }
     this.month.set(value);
