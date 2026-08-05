@@ -253,7 +253,9 @@ public class EventAttendanceService {
     }
 
     /**
-     * Toggle TIME_IN / TIME_OUT for a student or employee at an event.
+     * Record attendance at an event.
+     * First tap → TIME_IN; once timed in, every later tap (after cooldown) → TIME_OUT.
+     * Rapid re-taps within the cooldown return the previous result unchanged ({@code duplicate=true}).
      * Identifier may be RFID, student number, or employee number (looked up on the gate DB).
      */
     @Transactional
@@ -426,12 +428,9 @@ public class EventAttendanceService {
             return created;
         }
 
-        if (ACTION_OUT.equals(existing.getLastAction())) {
-            existing.setLastAction(ACTION_IN);
-        } else {
-            existing.setTimeOut(now);
-            existing.setLastAction(ACTION_OUT);
-        }
+        // Already timed in — succeeding taps are always time out (refresh timeOut).
+        existing.setTimeOut(now);
+        existing.setLastAction(ACTION_OUT);
         existing.setPersonName(personName);
         existing.setPersonNo(personNo);
         existing.setRfid(rfid);
