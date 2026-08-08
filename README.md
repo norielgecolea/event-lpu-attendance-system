@@ -13,9 +13,9 @@ Separate event check-in system. It keeps its **own database** for users, events,
 
 ```bash
 # Required: IP/hostname of the gate attendance Postgres
-GATE_ATTENDANCE_DB_HOST=192.168.1.50
+GATE_ATTENDANCE_DB_HOST=
 # Required for photo proxy — must include http:// or https://
-GATE_ATTENDANCE_URL=http://192.168.1.50
+GATE_ATTENDANCE_URL=
 
 # This system's DB
 POSTGRES_USER=postgres
