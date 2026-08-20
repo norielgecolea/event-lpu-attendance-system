@@ -58,6 +58,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/event-attendance/public-tap").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/event-attendance/kiosk-status").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/event-tones").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/time").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/api/auth/**").authenticated()
                         // Students from gate DB — read-only; Superadmin + OSAS

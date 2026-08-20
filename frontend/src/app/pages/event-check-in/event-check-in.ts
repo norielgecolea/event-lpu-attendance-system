@@ -35,6 +35,7 @@ import { NotificationService } from '../../core/notifications/notification.servi
 import { studentPhotoUrl } from '../../core/students/student-photo.util';
 import { EventKioskSounds } from './event-kiosk-sounds';
 import { EventTonesApiService } from '../../core/settings/event-tones-api.service';
+import { ServerTimeApiService } from '../../core/time/server-time-api.service';
 
 type WindowStatus = 'loading' | 'not_started' | 'open' | 'ended' | 'missing';
 type Flash = 'idle' | 'in' | 'out' | 'error' | 'birthday';
@@ -89,6 +90,7 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
   private readonly api = inject(EventsApiService);
   private readonly notifications = inject(NotificationService);
   private readonly tonesApi = inject(EventTonesApiService);
+  private readonly serverTimeApi = inject(ServerTimeApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly sounds = new EventKioskSounds();
@@ -115,14 +117,18 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
   private clockTimer?: ReturnType<typeof setInterval>;
   private tickTimer?: ReturnType<typeof setInterval>;
   private focusTimer?: ReturnType<typeof setInterval>;
+  private syncTimer?: ReturnType<typeof setInterval>;
   private clearTimer?: ReturnType<typeof setTimeout>;
   private exitTimer?: ReturnType<typeof setTimeout>;
   private lastScanId: string | null = null;
   private lastScanAt = 0;
   private inFlight = 0;
+  /** serverEpoch − clientEpoch (ms), so local Date.now() + offset ≈ server time. */
+  private serverOffsetMs = 0;
 
   private static readonly RESULT_HOLD_MS = 4200;
   private static readonly EXIT_MS = 520;
+  private static readonly TIME_SYNC_MS = 60_000;
 
   protected readonly windowStatus = computed<WindowStatus>(() => {
     const event = this.event();
@@ -152,8 +158,10 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
 
   constructor() {
     if (isPlatformBrowser(this.platformId)) {
-      this.clockTimer = setInterval(() => this.clock.set(new Date()), 1000);
-      this.tickTimer = setInterval(() => this.nowTick.set(Date.now()), 250);
+      this.syncServerTime();
+      this.clockTimer = setInterval(() => this.tickFromServer(), 1000);
+      this.tickTimer = setInterval(() => this.tickFromServer(), 250);
+      this.syncTimer = setInterval(() => this.syncServerTime(), EventCheckIn.TIME_SYNC_MS);
       this.loadToneSettings();
     }
 
@@ -189,7 +197,7 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
           ...payload,
           id: String(payload.id),
         });
-        this.nowTick.set(Date.now());
+        this.tickFromServer();
         queueMicrotask(() => this.focusInput());
       });
   }
@@ -205,6 +213,7 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
     clearInterval(this.clockTimer);
     clearInterval(this.tickTimer);
     clearInterval(this.focusTimer);
+    clearInterval(this.syncTimer);
     clearTimeout(this.clearTimer);
     clearTimeout(this.exitTimer);
     this.clearParty();
@@ -223,7 +232,7 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
       return;
     }
 
-    const now = Date.now();
+    const now = this.serverNowMs();
     if (identifier === this.lastScanId && now - this.lastScanAt < 750) {
       return;
     }
@@ -399,5 +408,33 @@ export class EventCheckIn implements AfterViewInit, OnDestroy {
         this.error.set(err?.error?.message ?? 'Event not found');
       },
     });
+  }
+
+  private syncServerTime(): void {
+    const sentAt = Date.now();
+    this.serverTimeApi.current().subscribe({
+      next: (res) => {
+        const receivedAt = Date.now();
+        const serverMs = new Date(res.now).getTime();
+        if (Number.isNaN(serverMs)) {
+          return;
+        }
+        // Approximate server clock at the midpoint of the round trip.
+        const clientMid = sentAt + (receivedAt - sentAt) / 2;
+        this.serverOffsetMs = serverMs - clientMid;
+        this.tickFromServer();
+      },
+      error: () => undefined,
+    });
+  }
+
+  private serverNowMs(): number {
+    return Date.now() + this.serverOffsetMs;
+  }
+
+  private tickFromServer(): void {
+    const now = this.serverNowMs();
+    this.clock.set(new Date(now));
+    this.nowTick.set(now);
   }
 }
