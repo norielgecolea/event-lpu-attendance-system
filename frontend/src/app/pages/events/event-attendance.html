@@ -227,7 +227,7 @@
       hlmInput
       class="bg-card w-full pl-9"
       type="search"
-      placeholder="Search by name or ID number"
+        placeholder="Search by name, ID, department, or course"
       [ngModel]="search()"
       (ngModelChange)="onSearchChange($event)"
     />
@@ -246,6 +246,8 @@
             <th hlmTh>ID No</th>
           }
           <th hlmTh>Type</th>
+          <th hlmTh>Department</th>
+          <th hlmTh>Course</th>
           <th hlmTh>Time In</th>
           <th hlmTh>Time Out</th>
           <th hlmTh>Last Action</th>
@@ -276,6 +278,20 @@
                 <span class="text-xs font-medium">
                   {{ log.personType === 'EMPLOYEE' ? 'Employee' : 'Student' }}
                 </span>
+              </td>
+              <td hlmTd>
+                @if (log.department) {
+                  {{ log.department }}
+                } @else {
+                  <span class="text-muted-foreground">—</span>
+                }
+              </td>
+              <td hlmTd>
+                @if (log.course) {
+                  {{ log.course }}
+                } @else {
+                  <span class="text-muted-foreground">—</span>
+                }
               </td>
               <td hlmTd>
                 @if (log.timeIn) {

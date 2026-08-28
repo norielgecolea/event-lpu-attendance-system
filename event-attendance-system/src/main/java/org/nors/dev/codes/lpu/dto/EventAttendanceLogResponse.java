@@ -17,6 +17,8 @@ public record EventAttendanceLogResponse(
         String personNo,
         String rfid,
         String personPhoto,
+        String department,
+        String course,
         Instant timeIn,
         Instant timeOut,
         String lastAction,
@@ -30,11 +32,11 @@ public record EventAttendanceLogResponse(
     private static final ZoneId APP_ZONE = ZoneId.of("Asia/Manila");
 
     public static EventAttendanceLogResponse from(EventAttendanceLog log) {
-        return from(log, null, null, false, false, null, null);
+        return from(log, null, null, false, false, null, null, null, null);
     }
 
     public static EventAttendanceLogResponse from(EventAttendanceLog log, String personPhoto) {
-        return from(log, personPhoto, null, false, false, null, null);
+        return from(log, personPhoto, null, false, false, null, null, null, null);
     }
 
     public static EventAttendanceLogResponse from(
@@ -42,7 +44,7 @@ public record EventAttendanceLogResponse(
             String personPhoto,
             LocalDate birthdate
     ) {
-        return from(log, personPhoto, birthdate, false, false, null, null);
+        return from(log, personPhoto, birthdate, false, false, null, null, null, null);
     }
 
     public static EventAttendanceLogResponse from(
@@ -51,7 +53,7 @@ public record EventAttendanceLogResponse(
             LocalDate birthdate,
             boolean duplicate
     ) {
-        return from(log, personPhoto, birthdate, duplicate, false, null, null);
+        return from(log, personPhoto, birthdate, duplicate, false, null, null, null, null);
     }
 
     public static EventAttendanceLogResponse from(
@@ -61,7 +63,7 @@ public record EventAttendanceLogResponse(
             boolean duplicate,
             boolean hideIdentifiers
     ) {
-        return from(log, personPhoto, birthdate, duplicate, hideIdentifiers, null, null);
+        return from(log, personPhoto, birthdate, duplicate, hideIdentifiers, null, null, null, null);
     }
 
     public static EventAttendanceLogResponse from(
@@ -72,6 +74,20 @@ public record EventAttendanceLogResponse(
             boolean hideIdentifiers,
             String eventTitle,
             String eventLocation
+    ) {
+        return from(log, personPhoto, birthdate, duplicate, hideIdentifiers, eventTitle, eventLocation, null, null);
+    }
+
+    public static EventAttendanceLogResponse from(
+            EventAttendanceLog log,
+            String personPhoto,
+            LocalDate birthdate,
+            boolean duplicate,
+            boolean hideIdentifiers,
+            String eventTitle,
+            String eventLocation,
+            String department,
+            String course
     ) {
         return new EventAttendanceLogResponse(
                 String.valueOf(log.getId()),
@@ -85,6 +101,8 @@ public record EventAttendanceLogResponse(
                 hideIdentifiers ? null : log.getPersonNo(),
                 hideIdentifiers ? null : log.getRfid(),
                 personPhoto,
+                department,
+                course,
                 log.getTimeIn(),
                 log.getTimeOut(),
                 log.getLastAction(),
@@ -110,6 +128,35 @@ public record EventAttendanceLogResponse(
                 personNo,
                 rfid,
                 personPhoto,
+                department,
+                course,
+                timeIn,
+                timeOut,
+                lastAction,
+                tappedByUserId,
+                tapCount,
+                birthday,
+                duplicate,
+                createdAt,
+                updatedAt
+        );
+    }
+
+    public EventAttendanceLogResponse withAffiliation(String department, String course) {
+        return new EventAttendanceLogResponse(
+                id,
+                eventId,
+                eventTitle,
+                eventLocation,
+                personType,
+                studentId,
+                employeeId,
+                personName,
+                personNo,
+                rfid,
+                personPhoto,
+                department,
+                course,
                 timeIn,
                 timeOut,
                 lastAction,
@@ -136,6 +183,8 @@ public record EventAttendanceLogResponse(
                 null,
                 null,
                 personPhoto,
+                department,
+                course,
                 timeIn,
                 timeOut,
                 lastAction,

@@ -71,10 +71,7 @@ public class EventAttendanceService {
         int size = Math.min(Math.max(limit, 1), 200);
         int from = Math.max(offset, 0);
         List<EventAttendanceLogResponse> items = attendanceLogRepository.findByEventId(eventId, from, size).stream()
-                .map(logEntry -> {
-                    EventAttendanceLogResponse response = EventAttendanceLogResponse.from(logEntry);
-                    return hideIdentifiers ? response.withoutIdentifiers() : response;
-                })
+                .map(logEntry -> toResponse(logEntry, hideIdentifiers))
                 .toList();
         return new EventAttendancePageResponse(items, attendanceLogRepository.countByEventId(eventId));
     }
@@ -83,10 +80,7 @@ public class EventAttendanceService {
     public List<EventAttendanceLogResponse> listByEvent(Long eventId, boolean hideIdentifiers) {
         requireEvent(eventId);
         return attendanceLogRepository.listByEventId(eventId).stream()
-                .map(logEntry -> {
-                    EventAttendanceLogResponse response = EventAttendanceLogResponse.from(logEntry);
-                    return hideIdentifiers ? response.withoutIdentifiers() : response;
-                })
+                .map(logEntry -> toResponse(logEntry, hideIdentifiers))
                 .toList();
     }
 
@@ -174,34 +168,39 @@ public class EventAttendanceService {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(baos, StandardCharsets.UTF_8))) {
             if (hideIdentifiers) {
-                writer.println("Event,Name,Type,Time In,Time Out,Last Action,Tap Count");
+                writer.println("Event,Name,Type,Department,Course,Time In,Time Out,Last Action,Tap Count");
             } else {
-                writer.println("Event,Name,ID Number,Type,RFID,Time In,Time Out,Last Action,Tap Count");
+                writer.println("Event,Name,ID Number,Type,Department,Course,RFID,Time In,Time Out,Last Action,Tap Count");
             }
             for (EventAttendanceLog logEntry : logs) {
+                EventAttendanceLogResponse row = toResponse(logEntry, hideIdentifiers);
                 if (hideIdentifiers) {
-                    writer.printf(
-                            "%s,%s,%s,%s,%s,%s,%d%n",
-                            csv(event.getTitle()),
-                            csv(logEntry.getPersonName()),
-                            csv(logEntry.getPersonType()),
-                            logEntry.getTimeIn() == null ? "" : formatter.format(logEntry.getTimeIn()),
-                            logEntry.getTimeOut() == null ? "" : formatter.format(logEntry.getTimeOut()),
-                            csv(logEntry.getLastAction()),
-                            logEntry.getTapCount()
-                    );
-                } else {
                     writer.printf(
                             "%s,%s,%s,%s,%s,%s,%s,%s,%d%n",
                             csv(event.getTitle()),
-                            csv(logEntry.getPersonName()),
-                            csv(logEntry.getPersonNo()),
-                            csv(logEntry.getPersonType()),
-                            csv(logEntry.getRfid()),
-                            logEntry.getTimeIn() == null ? "" : formatter.format(logEntry.getTimeIn()),
-                            logEntry.getTimeOut() == null ? "" : formatter.format(logEntry.getTimeOut()),
-                            csv(logEntry.getLastAction()),
-                            logEntry.getTapCount()
+                            csv(row.personName()),
+                            csv(row.personType()),
+                            csv(row.department()),
+                            csv(row.course()),
+                            row.timeIn() == null ? "" : formatter.format(row.timeIn()),
+                            row.timeOut() == null ? "" : formatter.format(row.timeOut()),
+                            csv(row.lastAction()),
+                            row.tapCount()
+                    );
+                } else {
+                    writer.printf(
+                            "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%d%n",
+                            csv(event.getTitle()),
+                            csv(row.personName()),
+                            csv(row.personNo()),
+                            csv(row.personType()),
+                            csv(row.department()),
+                            csv(row.course()),
+                            csv(row.rfid()),
+                            row.timeIn() == null ? "" : formatter.format(row.timeIn()),
+                            row.timeOut() == null ? "" : formatter.format(row.timeOut()),
+                            csv(row.lastAction()),
+                            row.tapCount()
                     );
                 }
             }
@@ -232,6 +231,10 @@ public class EventAttendanceService {
                             .withEvent(
                                     event != null ? event.getTitle() : null,
                                     event != null ? event.getLocation() : null
+                            )
+                            .withAffiliation(
+                                    resolveDepartment(logEntry),
+                                    resolveCourse(logEntry)
                             );
                     return hideIdentifiers ? response.withoutIdentifiers() : response;
                 })
@@ -249,6 +252,39 @@ public class EventAttendanceService {
                     .map(Employee::getPhoto)
                     .orElse(null);
         }
+        return null;
+    }
+
+    private EventAttendanceLogResponse toResponse(EventAttendanceLog logEntry, boolean hideIdentifiers) {
+        EventAttendanceLogResponse response = EventAttendanceLogResponse.from(logEntry)
+                .withAffiliation(
+                        resolveDepartment(logEntry),
+                        resolveCourse(logEntry)
+                );
+        return hideIdentifiers ? response.withoutIdentifiers() : response;
+    }
+
+    private String resolveDepartment(EventAttendanceLog logEntry) {
+        if (TYPE_STUDENT.equals(logEntry.getPersonType()) && logEntry.getStudentId() != null) {
+            return studentRepository.findById(logEntry.getStudentId())
+                    .map(Student::getDepartment)
+                    .orElse(null);
+        }
+        if (TYPE_EMPLOYEE.equals(logEntry.getPersonType()) && logEntry.getEmployeeId() != null) {
+            return employeeRepository.findById(logEntry.getEmployeeId())
+                    .map(Employee::getDepartment)
+                    .orElse(null);
+        }
+        return null;
+    }
+
+    private String resolveCourse(EventAttendanceLog logEntry) {
+        if (TYPE_STUDENT.equals(logEntry.getPersonType()) && logEntry.getStudentId() != null) {
+            return studentRepository.findById(logEntry.getStudentId())
+                    .map(Student::getCourse)
+                    .orElse(null);
+        }
+        // Employees have no course — leave blank on the report.
         return null;
     }
 
@@ -304,7 +340,7 @@ public class EventAttendanceService {
                                 student.getPhoto(),
                                 student.getBirthdate(),
                                 true
-                        ),
+                        ).withAffiliation(student.getDepartment(), student.getCourse()),
                         event
                 );
             }
@@ -326,7 +362,7 @@ public class EventAttendanceService {
                             result,
                             student.getPhoto(),
                             student.getBirthdate()
-                    ),
+                    ).withAffiliation(student.getDepartment(), student.getCourse()),
                     event
             );
             notificationService.broadcastAttendanceTap(response);
@@ -344,7 +380,7 @@ public class EventAttendanceService {
                             employee.getPhoto(),
                             employee.getBirthdate(),
                             true
-                    ),
+                    ).withAffiliation(employee.getDepartment(), null),
                     event
             );
         }
@@ -366,7 +402,7 @@ public class EventAttendanceService {
                         result,
                         employee.getPhoto(),
                         employee.getBirthdate()
-                ),
+                ).withAffiliation(employee.getDepartment(), null),
                 event
         );
         notificationService.broadcastAttendanceTap(response);

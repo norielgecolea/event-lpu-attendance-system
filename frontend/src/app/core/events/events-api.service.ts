@@ -39,6 +39,8 @@ export interface EventAttendanceLog {
   personNo: string | null;
   rfid: string | null;
   personPhoto?: string | null;
+  department?: string | null;
+  course?: string | null;
   timeIn: string | null;
   timeOut: string | null;
   lastAction: 'TIME_IN' | 'TIME_OUT' | string;

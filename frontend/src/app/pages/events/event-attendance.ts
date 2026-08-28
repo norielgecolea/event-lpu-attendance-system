@@ -115,6 +115,8 @@ export class EventAttendance {
         hideIds ? null : log.personNo,
         hideIds ? null : log.rfid,
         log.personType,
+        log.department,
+        log.course,
       ]
         .filter(Boolean)
         .join(' ')
@@ -123,7 +125,7 @@ export class EventAttendance {
     });
   });
 
-  protected readonly tableColspan = computed(() => (this.hideIdentifiers() ? 5 : 6));
+  protected readonly tableColspan = computed(() => (this.hideIdentifiers() ? 7 : 8));
 
   protected readonly studentShare = computed(() => {
     const s = this.stats();
