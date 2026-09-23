@@ -71,9 +71,22 @@ services:
       BACKEND_CONTEXT_PATH: /event-attendance-system
       GATE_ATTENDANCE_URL: ${GATE_ATTENDANCE_URL:-http://127.0.0.1}
       HUSKY: "0"
+      # production = SSR from dist (nginx proxies /event-attendance-system to Tomcat).
+      # development = ng serve with proxy.conf.js for local hot reload.
+      FRONTEND_MODE: ${FRONTEND_MODE:-production}
       NG_ALLOWED_HOSTS: "*"
       NG_TRUST_PROXY_HEADERS: "X-FORWARDED-FOR,X-FORWARDED-PROTO,X-FORWARDED-HOST"
-    command: sh -c "test -f package.json || { echo 'Missing package.json — mount ./frontend to /app'; exit 1; } && npm install && npx ng serve --host 0.0.0.0 --port 4200 --proxy-config proxy.conf.js"
+      PORT: "4200"
+      HOST: "0.0.0.0"
+    command: >
+      sh -c "test -f package.json || { echo 'Missing package.json — mount ./frontend to /app'; exit 1; };
+      if [ \"$${FRONTEND_MODE:-production}\" = development ]; then
+        test -x node_modules/.bin/ng || npm install;
+        npx ng serve --host 0.0.0.0 --port 4200 --proxy-config proxy.conf.js;
+      else
+        test -f dist/lpu-event-attendance-system/server/server.mjs || { npm install && npx ng build; };
+        PORT=4200 HOST=0.0.0.0 node dist/lpu-event-attendance-system/server/server.mjs;
+      fi"
     stdin_open: true
     tty: true
     depends_on:
