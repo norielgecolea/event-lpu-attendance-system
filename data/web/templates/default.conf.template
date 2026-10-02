@@ -111,22 +111,23 @@ server {
     proxy_set_header Accept-Encoding "";
     proxy_read_timeout 360s;
 
-    # HTML is not edge-cached. Point the entry script at a new query so
-    # Cloudflare does not keep serving the cached bundle that imports login-*.js.
+    # HTML is not edge-cached. Bump the query when this rewrite changes so
+    # Cloudflare does not keep a bundle that still imports login-*.js.
     location / {
         proxy_pass http://beszel-hub:8090;
         sub_filter_once off;
-        sub_filter_types text/html;
-        sub_filter '.js"' '.js?v=2"';
+        sub_filter '.js"' '.js?v=3"';
     }
 
     # Chunk renamed so the browser never requests a URL containing "login".
+    # ?v=3 also bypasses edge copies of other chunks that still import it.
     location ^~ /assets/hubauth- {
         rewrite ^/assets/hubauth-(.*)$ /assets/login-$1 break;
         proxy_pass http://beszel-hub:8090;
         sub_filter_once off;
         sub_filter_types text/javascript application/javascript text/css;
         sub_filter './login-' './hubauth-';
+        sub_filter '.js"' '.js?v=3"';
     }
 
     location /assets/ {
@@ -134,6 +135,7 @@ server {
         sub_filter_once off;
         sub_filter_types text/javascript application/javascript text/css;
         sub_filter './login-' './hubauth-';
+        sub_filter '.js"' '.js?v=3"';
     }
 
     location /api/ {
