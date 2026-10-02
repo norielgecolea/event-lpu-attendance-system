@@ -79,3 +79,65 @@ server {
         proxy_read_timeout 86400;
     }
 }
+
+# Beszel hub — systemsmonitoring.lpulaguna.com
+# Also listens on 8090 so an existing tunnel origin of beszel:8090 / host:8090
+# hits this proxy. Cloudflare's WAF challenges any path containing "login",
+# which blocks Beszel's lazy chunk /assets/login-*.js and leaves a blank page.
+server {
+    listen 80;
+    listen [::]:80;
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    listen 8090;
+    listen [::]:8090;
+    server_name systemsmonitoring.lpulaguna.com;
+
+    ssl_certificate     /etc/nginx/certs/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+
+    client_max_body_size 32m;
+
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    # Uncompressed bodies so sub_filter can rewrite the login chunk name.
+    proxy_set_header Accept-Encoding "";
+    proxy_read_timeout 360s;
+
+    # HTML is not edge-cached. Point the entry script at a new query so
+    # Cloudflare does not keep serving the cached bundle that imports login-*.js.
+    location / {
+        proxy_pass http://beszel-hub:8090;
+        sub_filter_once off;
+        sub_filter_types text/html;
+        sub_filter '.js"' '.js?v=2"';
+    }
+
+    # Chunk renamed so the browser never requests a URL containing "login".
+    location ^~ /assets/hubauth- {
+        rewrite ^/assets/hubauth-(.*)$ /assets/login-$1 break;
+        proxy_pass http://beszel-hub:8090;
+        sub_filter_once off;
+        sub_filter_types text/javascript application/javascript text/css;
+        sub_filter './login-' './hubauth-';
+    }
+
+    location /assets/ {
+        proxy_pass http://beszel-hub:8090;
+        sub_filter_once off;
+        sub_filter_types text/javascript application/javascript text/css;
+        sub_filter './login-' './hubauth-';
+    }
+
+    location /api/ {
+        proxy_pass http://beszel-hub:8090;
+        proxy_buffering off;
+    }
+}
