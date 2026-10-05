@@ -111,12 +111,18 @@ services:
       - ./data/web/templates:/etc/nginx/templates
       # Writable so missing (gitignored) certs can be auto-generated on first start
       - ./data/web/certs:/etc/nginx/certs
+      # Student/employee photos owned by the gate attendance app.
+      - ${GATE_PICTURES_DIR:-../lpu-gate-attendance-system/data/pictures}:/var/gate-pictures:ro
     environment:
       SERVER_NAME: ${SERVER_NAME:-_}
       UPSTREAM_HOST: angular
       UPSTREAM_PORT: 4200
       TOMCAT_HOST: tomcat
       TOMCAT_PORT: 8080
+      # Proxied at /gate-attendance/ (student and employee photos).
+      GATE_ATTENDANCE_URL: ${GATE_ATTENDANCE_URL:-http://host.docker.internal:8080}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - angular
       - tomcat

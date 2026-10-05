@@ -12,6 +12,32 @@ server {
 
     client_max_body_size 250m;
 
+    # Gate photos from the local pictures directory. Fall back to the gate
+    # server when a file is missing. GATE_ATTENDANCE_URL has no trailing slash.
+    location ^~ /gate-attendance/attendance-system/pictures/ {
+        alias /var/gate-pictures/;
+        error_page 403 404 = @gate_picture;
+    }
+
+    location @gate_picture {
+        rewrite ^/gate-attendance/(.*)$ /$1 break;
+        proxy_pass ${GATE_ATTENDANCE_URL};
+        proxy_http_version 1.1;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+
+    location /gate-attendance/ {
+        proxy_pass ${GATE_ATTENDANCE_URL}/;
+        proxy_http_version 1.1;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+
     # Backend API + WebSocket (Tomcat WAR context)
     location /event-attendance-system/ {
         proxy_pass http://${TOMCAT_HOST}:${TOMCAT_PORT};
@@ -52,6 +78,32 @@ server {
     ssl_protocols       TLSv1.2 TLSv1.3;
 
     client_max_body_size 250m;
+
+    # Gate photos from the local pictures directory. Fall back to the gate
+    # server when a file is missing. GATE_ATTENDANCE_URL has no trailing slash.
+    location ^~ /gate-attendance/attendance-system/pictures/ {
+        alias /var/gate-pictures/;
+        error_page 403 404 = @gate_picture;
+    }
+
+    location @gate_picture {
+        rewrite ^/gate-attendance/(.*)$ /$1 break;
+        proxy_pass ${GATE_ATTENDANCE_URL};
+        proxy_http_version 1.1;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+
+    location /gate-attendance/ {
+        proxy_pass ${GATE_ATTENDANCE_URL}/;
+        proxy_http_version 1.1;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
 
     location /event-attendance-system/ {
         proxy_pass http://${TOMCAT_HOST}:${TOMCAT_PORT};
